@@ -18,6 +18,7 @@
       <p class="muted">No certificate yet for <code>{{.Server.Domain}}</code>.</p>
     {{end}}
 
+    {{if .IsAdmin}}
     <div class="op-row">
       <form hx-post="/servers/{{$sid}}/certs/issue" hx-target="#cert-panel" hx-swap="innerHTML"
             hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
@@ -51,6 +52,7 @@
       </div>
     </div>
     {{end}}
+    {{end}}{{/* IsAdmin */}}
   {{end}}
 </div>
 {{end}}

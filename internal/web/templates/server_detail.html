@@ -3,6 +3,7 @@
 {{$s := .Data}}
 <div class="page-head">
   <h1>{{$s.Name}} <span class="badge">{{$s.Status}}</span></h1>
+  {{if $.IsAdmin}}
   <div class="actions">
     <a class="btn ghost" href="/servers/{{$s.ID}}/edit">Edit</a>
     <form method="post" action="/servers/{{$s.ID}}/delete" class="inline"
@@ -11,6 +12,7 @@
       <button class="btn danger" type="submit">Delete</button>
     </form>
   </div>
+  {{end}}
 </div>
 
 <div class="detail-grid">
@@ -31,6 +33,7 @@
 </div>
 {{end}}
 
+{{if $.IsAdmin}}
 <div class="op-row">
   <button class="btn" hx-post="/servers/{{$s.ID}}/test-ssh" hx-target="#ssh-result"
           hx-swap="innerHTML" hx-indicator="#ssh-spin">Test SSH &amp; scan ports</button>
@@ -44,6 +47,7 @@
   <span id="deploy-spin" class="htmx-indicator muted">deploying… (build → upload → systemd)</span>
 </div>
 <div id="deploy-result"></div>
+{{end}}
 
 <h2>frps users</h2>
 <div id="frp-users" hx-get="/servers/{{$s.ID}}/frp-users" hx-trigger="load"></div>

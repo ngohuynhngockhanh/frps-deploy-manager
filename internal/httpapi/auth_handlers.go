@@ -9,14 +9,15 @@ import (
 // pageData is the common template payload: current user, CSRF token, and the
 // page-specific payload in Data.
 type pageData struct {
-	User string
-	CSRF string
-	Err  string
-	Data any
+	User    string
+	IsAdmin bool
+	CSRF    string
+	Err     string
+	Data    any
 }
 
 func (d Deps) page(r *http.Request, data any) pageData {
-	return pageData{User: auth.CurrentUser(r), CSRF: auth.CSRFToken(r), Data: data}
+	return pageData{User: auth.CurrentUser(r), IsAdmin: auth.IsAdmin(r), CSRF: auth.CSRFToken(r), Data: data}
 }
 
 func (d Deps) loginPage(w http.ResponseWriter, r *http.Request) {

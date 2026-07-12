@@ -42,6 +42,10 @@ func (d Deps) dashProxy(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Server not found or has no domain.", http.StatusNotFound)
 		return
 	}
+	if !d.canAccessServer(r, s.ID) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 	dashboardProxy(s).ServeHTTP(w, r)
 }
 

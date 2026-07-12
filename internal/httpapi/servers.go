@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/auth"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
 )
 
@@ -115,7 +116,21 @@ func (d Deps) lookupServer(w http.ResponseWriter, r *http.Request) (store.Server
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return store.Server{}, false
 	}
+	if !d.canAccessServer(r, s.ID) {
+		http.NotFound(w, r) // managers can't even see it exists
+		return store.Server{}, false
+	}
 	return s, true
+}
+
+// canAccessServer reports whether the current operator may view a server:
+// admins see all; managers only their assigned sites.
+func (d Deps) canAccessServer(r *http.Request, serverID int64) bool {
+	if auth.IsAdmin(r) {
+		return true
+	}
+	ok, _ := d.Store.UserCanAccess(auth.CurrentUserID(r), serverID)
+	return ok
 }
 
 func parseID(w http.ResponseWriter, r *http.Request) (int64, bool) {

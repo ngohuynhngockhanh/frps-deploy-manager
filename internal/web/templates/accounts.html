@@ -1,0 +1,58 @@
+{{define "title"}}Accounts · iNut FRPS{{end}}
+{{define "content"}}
+{{$csrf := .CSRF}}
+{{$servers := .Data.Servers}}
+<div class="page-head"><h1>Accounts</h1></div>
+{{if .Data.Err}}<p class="error">{{.Data.Err}}</p>{{end}}
+{{if .Data.Msg}}<p class="muted">✓ {{.Data.Msg}}</p>{{end}}
+
+<table class="tbl">
+  <thead><tr><th>User</th><th>Role</th><th>Sites (manager)</th><th>Password</th><th></th></tr></thead>
+  <tbody>
+    {{range $a := .Data.Accounts}}
+    <tr>
+      <td><code>{{$a.Username}}</code></td>
+      <td>{{$a.Role}}</td>
+      <td>
+        {{if eq $a.Role "admin"}}<span class="muted">all sites</span>{{else}}
+        <form method="post" action="/accounts/{{$a.ID}}/servers" class="inline-form">
+          <input type="hidden" name="_csrf" value="{{$csrf}}">
+          {{range $s := $servers}}
+          <label class="chk"><input type="checkbox" name="servers" value="{{$s.ID}}" {{if index $a.ServerIDs $s.ID}}checked{{end}}> {{$s.Name}}</label>
+          {{end}}
+          <button class="btn ghost" type="submit">Save</button>
+        </form>
+        {{end}}
+      </td>
+      <td>
+        <form method="post" action="/accounts/{{$a.ID}}/password" class="inline-form">
+          <input type="hidden" name="_csrf" value="{{$csrf}}">
+          <input name="password" type="password" placeholder="new password">
+          <button class="btn ghost" type="submit">Reset</button>
+        </form>
+      </td>
+      <td class="row-actions">
+        <form method="post" action="/accounts/{{$a.ID}}/delete" class="inline"
+              onsubmit="return confirm('Delete {{$a.Username}}?');">
+          <input type="hidden" name="_csrf" value="{{$csrf}}">
+          <button class="btn danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+
+<h2>New account</h2>
+<form method="post" action="/accounts" class="inline-form">
+  <input type="hidden" name="_csrf" value="{{$csrf}}">
+  <input name="username" placeholder="username" required>
+  <input name="password" type="password" placeholder="password" required>
+  <select name="role">
+    <option value="manager">manager (assigned sites)</option>
+    <option value="admin">admin (full)</option>
+  </select>
+  <button class="btn primary" type="submit">Create</button>
+  <span class="muted">Manager: assign sites after creating (row above).</span>
+</form>
+{{end}}

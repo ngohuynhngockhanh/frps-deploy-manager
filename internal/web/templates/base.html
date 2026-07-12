@@ -15,8 +15,9 @@
   {{if .User}}
   <header class="topbar">
     <a class="brand" href="/"><img src="/static/logo.png" alt="iNut FRPS" class="brand-logo"></a>
+    {{if .IsAdmin}}<a class="navlink" href="/accounts">Accounts</a>{{end}}
     <div class="spacer"></div>
-    <span class="who">{{.User}}</span>
+    <span class="who">{{.User}}{{if not .IsAdmin}} · manager{{end}}</span>
     <form method="post" action="/logout" class="inline">
       <input type="hidden" name="_csrf" value="{{.CSRF}}">
       <button class="btn ghost" type="submit">Logout</button>

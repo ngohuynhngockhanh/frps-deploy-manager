@@ -110,3 +110,9 @@ h2 { font-size: 1.15rem; margin-top: 1.75rem; }
 .frpc summary::-webkit-details-marker { display: none; }
 .frpc-cfg { background: #0b1020; border: 1px solid #2a3556; border-radius: .4rem;
   padding: .6rem; margin-top: .4rem; font-size: .78rem; overflow-x: auto; white-space: pre; color: #cfe; }
+
+/* RBAC */
+.navlink { color: #93a1c0; margin-left: .75rem; font-size: .9rem; }
+.navlink:hover { color: #e5e9f0; }
+.chk { display: inline-flex; align-items: center; gap: .3rem; font-size: .85rem; color: #93a1c0; margin-right: .5rem; }
+.chk input { width: auto; }

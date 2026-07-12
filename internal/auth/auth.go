@@ -34,7 +34,9 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrRateLimited = errors.New("too many attempts, try again later")
 
 type session struct {
+	userID   int64
 	username string
+	role     string
 	csrf     string
 	expires  time.Time
 }
@@ -75,7 +77,7 @@ func (m *Manager) SeedAdmin(username, password string) error {
 	if err != nil {
 		return err
 	}
-	_, err = m.store.CreateAppUser(username, hash)
+	_, err = m.store.CreateAppUser(username, hash, store.RoleAdmin)
 	return err
 }
 
@@ -101,7 +103,7 @@ func (m *Manager) Login(username, password string) (token, csrf string, err erro
 	csrf = randomToken()
 	exp := time.Now().Add(sessionTTL)
 	m.mu.Lock()
-	m.sessions[token] = &session{username: username, csrf: csrf, expires: exp}
+	m.sessions[token] = &session{userID: u.ID, username: username, role: u.Role, csrf: csrf, expires: exp}
 	m.mu.Unlock()
 	// Persist so the login survives a restart.
 	_ = m.store.SaveSession(store.Session{Token: token, Username: username, CSRF: csrf, ExpiresAt: exp.Unix()})
@@ -133,6 +135,11 @@ func (m *Manager) lookup(token string) *session {
 			return nil
 		}
 		s = &session{username: ps.Username, csrf: ps.CSRF, expires: time.Unix(ps.ExpiresAt, 0)}
+		// Re-hydrate role/id (not stored in the sessions table).
+		if au, err := m.store.GetAppUserByUsername(ps.Username); err == nil {
+			s.userID = au.ID
+			s.role = au.Role
+		}
 		m.mu.Lock()
 		m.sessions[token] = s
 		m.mu.Unlock()
@@ -178,7 +185,7 @@ func (m *Manager) Middleware(next http.Handler) http.Handler {
 			http.Error(w, "invalid CSRF token", http.StatusForbidden)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(withUser(r, s.username, s.csrf)))
+		next.ServeHTTP(w, r.WithContext(withUser(r, s)))
 	})
 }
 
@@ -223,6 +230,23 @@ func CurrentUser(r *http.Request) string {
 func CSRFToken(r *http.Request) string {
 	v, _ := r.Context().Value(userKey).(userInfo)
 	return v.csrf
+}
+
+// CurrentUserID returns the authenticated operator's id, or 0.
+func CurrentUserID(r *http.Request) int64 {
+	v, _ := r.Context().Value(userKey).(userInfo)
+	return v.id
+}
+
+// CurrentRole returns the authenticated operator's role, or "".
+func CurrentRole(r *http.Request) string {
+	v, _ := r.Context().Value(userKey).(userInfo)
+	return v.role
+}
+
+// IsAdmin reports whether the current operator is an admin.
+func IsAdmin(r *http.Request) bool {
+	return CurrentRole(r) == "admin"
 }
 
 // CookieValue returns the raw session token from the request cookie.
@@ -278,12 +302,14 @@ func (m *Manager) clearAttempts(username string) {
 // --- misc ---
 
 type userInfo struct {
+	id   int64
 	name string
+	role string
 	csrf string
 }
 
-func withUser(r *http.Request, name, csrf string) context.Context {
-	return context.WithValue(r.Context(), userKey, userInfo{name: name, csrf: csrf})
+func withUser(r *http.Request, s *session) context.Context {
+	return context.WithValue(r.Context(), userKey, userInfo{id: s.userID, name: s.username, role: s.role, csrf: s.csrf})
 }
 
 func randomToken() string {
