@@ -1,0 +1,47 @@
+# Managed by frps-deploy-manager — do not edit by hand.
+# Base domain -> frps dashboard; *.<domain> -> frps vhostHTTP (frpc subdomains).
+# Uses the wildcard cert issued via DNS-01 (certbot dns-cloudflare).
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{.Domain}} *.{{.Domain}};
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name {{.Domain}};
+
+    ssl_certificate     /etc/letsencrypt/live/{{.Domain}}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{.Domain}}/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:{{.DashboardPort}};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name *.{{.Domain}};
+
+    ssl_certificate     /etc/letsencrypt/live/{{.Domain}}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{.Domain}}/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:{{.VhostHTTPPort}};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # frpc tunnels may use websockets
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+    }
+}

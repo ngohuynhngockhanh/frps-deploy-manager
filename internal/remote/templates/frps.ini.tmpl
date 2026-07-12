@@ -1,0 +1,15 @@
+# Managed by frps-deploy-manager — do not edit by hand.
+[common]
+bind_port = {{.BindPort}}
+vhost_http_port = {{.VhostHTTPPort}}
+{{if .Domain}}subdomain_host = {{.Domain}}{{end}}
+dashboard_addr = 127.0.0.1
+dashboard_port = {{.DashboardPort}}
+dashboard_user = {{.DashUser}}
+dashboard_pwd = {{.DashPassword}}
+
+# Per-user authentication delegated to fp-multiuser via the Login plugin.
+[plugin.multiuser]
+addr = 127.0.0.1:{{.FpmuPort}}
+path = /handler
+ops = Login

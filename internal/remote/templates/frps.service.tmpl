@@ -5,7 +5,7 @@ Wants=fp-multiuser-{{.Project}}.service
 
 [Service]
 Type=simple
-ExecStart={{.RemotePath}}/bin/frps -c {{.RemotePath}}/conf/frps.toml
+ExecStart={{.RemotePath}}/bin/frps -c {{.RemotePath}}/conf/frps.ini
 Restart=on-failure
 RestartSec=3
 LimitNOFILE=1048576

@@ -5,6 +5,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Config is the resolved application configuration.
@@ -47,6 +48,19 @@ func (c Config) MasterKeyPath() string { return filepath.Join(c.DataDir, "master
 
 // BuildCacheDir caches cross-compiled frps / fp-multiuser binaries.
 func (c Config) BuildCacheDir() string { return filepath.Join(c.DataDir, "build-cache") }
+
+// CloudflareTokenPath is the gitignored file holding the Cloudflare API token.
+func (c Config) CloudflareTokenPath() string { return filepath.Join(c.DataDir, "cloudflare.token") }
+
+// CloudflareToken returns the Cloudflare API token from env or the token file
+// (empty if not configured).
+func (c Config) CloudflareToken() string {
+	if v := os.Getenv("FDM_CLOUDFLARE_TOKEN"); v != "" {
+		return strings.TrimSpace(v)
+	}
+	b, _ := os.ReadFile(c.CloudflareTokenPath())
+	return strings.TrimSpace(string(b))
+}
 
 func envOr(key, def string) string {
 	if v := os.Getenv(key); v != "" {

@@ -53,6 +53,8 @@ func NewRouter(d Deps) http.Handler {
 	protected.HandleFunc("GET /servers/{id}/certs", d.certPanel)
 	protected.HandleFunc("POST /servers/{id}/certs/issue", d.certIssue)
 	protected.HandleFunc("POST /servers/{id}/certs/refresh", d.certRefresh)
+	protected.HandleFunc("POST /servers/{id}/dns/cloudflare", d.certPointDNS)
+	protected.HandleFunc("POST /servers/{id}/certs/cloudflare", d.certIssueCloudflare)
 	mux.Handle("/", d.Auth.Middleware(protected))
 
 	return logging(mux)

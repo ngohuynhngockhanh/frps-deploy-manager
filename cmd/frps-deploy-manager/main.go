@@ -77,7 +77,7 @@ func run(cfg config.Config) error {
 		GoBin: cfg.GoBin, FRPSrcDir: cfg.FRPSrcDir,
 		FpmuSrcDir: cfg.FpmuSrcDir, CacheDir: cfg.BuildCacheDir(),
 	}
-	deployer := &remote.Deployer{Store: st, Builder: bld, Sealer: sealer}
+	deployer := &remote.Deployer{Store: st, Builder: bld, Sealer: sealer, CFToken: cfg.CloudflareToken()}
 
 	renderer, err := web.NewRenderer()
 	if err != nil {

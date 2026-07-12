@@ -63,7 +63,31 @@ own frps unit.
 - **fp-multiuser not active after add:** check `journalctl -u fp-multiuser-<proj>`;
   a malformed `tokens.txt` line is the usual cause.
 
-## Wildcard cert (`*.io.vnmap3d.com`) — manual DNS-01
+## Cloudflare (automatic wildcard cert + DNS) — recommended
+
+If the server's domain is in a Cloudflare zone, the tool automates everything.
+Put the Cloudflare **API token** in `data/cloudflare.token` (gitignored, mode
+0600) or env `FDM_CLOUDFLARE_TOKEN`. The token needs Zone:DNS:Edit on the zone.
+
+On the server detail page → HTTPS certificate → Cloudflare box:
+- **Point DNS → VPS**: upserts A records `<domain>` and `*.<domain>` at the VPS
+  public IP (DNS-only / grey cloud — required for non-HTTP frps ports).
+- **Issue wildcard cert**: installs `certbot-dns-cloudflare` on the VPS, writes
+  the credentials ini (0600), issues a DNS-01 cert for `<domain>` + `*.<domain>`
+  (**auto-renews** via certbot's timer), then installs an nginx block:
+  `<domain>` → dashboard (9001), `*.<domain>` → frps vhost (9002) for frpc
+  subdomain tunnels. frps is configured with `subdomain_host = <domain>`, so a
+  frpc registering `subdomain = foo` is served at `foo.<domain>` over HTTPS.
+
+Example verified live: `a.vnmap3d.io.vn` (dashboard) + `*.a.vnmap3d.io.vn`
+(frpc tunnels), single wildcard cert, auto-renew.
+
+## frps config format
+
+frps is configured with **legacy INI** (`conf/frps.ini`, `[common]` +
+`[plugin.multiuser]`). systemd runs `frps -c .../conf/frps.ini`.
+
+## Manual wildcard DNS-01 (only if DNS is NOT on Cloudflare)
 
 DNS for `vnmap3d.com` is at vdconline.vn (no API), so the wildcard cert is issued
 **manually** via DNS-01 and **must be renewed manually** (~every 60 days). It is a

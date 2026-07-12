@@ -29,6 +29,7 @@ type Deployer struct {
 	Store   *store.Store
 	Builder *builder.Builder
 	Sealer  *crypto.Sealer
+	CFToken string // Cloudflare API token (empty if not configured)
 }
 
 // Provision deploys/updates frps + fp-multiuser on the server. It is idempotent:
@@ -121,14 +122,14 @@ func (d *Deployer) Provision(s store.Server, log LogFn) (store.Server, error) {
 		s.DashPassword = randHex(9)
 		_ = d.Store.UpdateServer(s)
 	}
-	toml, err := render("frps.toml.tmpl", s)
+	ini, err := render("frps.ini.tmpl", s)
 	if err != nil {
-		return fail("frps.toml", err)
+		return fail("frps.ini", err)
 	}
-	if err := client.WriteFile(base+"/conf/frps.toml", toml, 0o600); err != nil {
-		return fail("frps.toml", err)
+	if err := client.WriteFile(base+"/conf/frps.ini", ini, 0o600); err != nil {
+		return fail("frps.ini", err)
 	}
-	step("frps.toml", true, fmt.Sprintf("dashboard on 127.0.0.1:%d", s.DashboardPort))
+	step("frps.ini", true, fmt.Sprintf("dashboard on 127.0.0.1:%d", s.DashboardPort))
 
 	// 8) systemd units.
 	fpmuUnit, err := render("fp-multiuser.service.tmpl", s)

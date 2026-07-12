@@ -2,6 +2,7 @@
 {{$sid := .Server.ID}}
 <div class="cert-panel">
   {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
+  {{if .Msg}}<p class="muted">✓ {{.Msg}}</p>{{end}}
 
   {{if not .Server.Domain}}
     <p class="muted">Set a domain on this server to enable certificates.</p>
@@ -31,6 +32,25 @@
       {{end}}
       <span id="cert-spin" class="htmx-indicator muted">running certbot…</span>
     </div>
+
+    {{if .HasCF}}
+    <div class="cf-box">
+      <div class="muted">Cloudflare (DNS-01 wildcard — <code>*.{{.Server.Domain}}</code>, auto-renew):</div>
+      <div class="op-row">
+        <form hx-post="/servers/{{$sid}}/dns/cloudflare" hx-target="#cert-panel" hx-swap="innerHTML"
+              hx-indicator="#cf-spin" hx-disabled-elt="find button" class="inline">
+          <input type="hidden" name="_csrf" value="{{.CSRF}}">
+          <button class="btn" type="submit">Point DNS → VPS</button>
+        </form>
+        <form hx-post="/servers/{{$sid}}/certs/cloudflare" hx-target="#cert-panel" hx-swap="innerHTML"
+              hx-indicator="#cf-spin" hx-disabled-elt="find button" class="inline">
+          <input type="hidden" name="_csrf" value="{{.CSRF}}">
+          <button class="btn primary" type="submit">Issue wildcard cert</button>
+        </form>
+        <span id="cf-spin" class="htmx-indicator muted">Cloudflare…</span>
+      </div>
+    </div>
+    {{end}}
   {{end}}
 </div>
 {{end}}
