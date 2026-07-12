@@ -39,5 +39,6 @@
 <h2>frps users</h2>
 <div id="frp-users" hx-get="/servers/{{$s.ID}}/frp-users" hx-trigger="load"></div>
 
-<p class="muted">Certificate management arrives in M9–M10.</p>
+<h2>HTTPS certificate</h2>
+<div id="cert-panel" hx-get="/servers/{{$s.ID}}/certs" hx-trigger="load"></div>
 {{end}}

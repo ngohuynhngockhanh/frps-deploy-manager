@@ -50,6 +50,9 @@ func NewRouter(d Deps) http.Handler {
 	protected.HandleFunc("POST /servers/{id}/frp-users", d.frpUserAdd)
 	protected.HandleFunc("POST /servers/{id}/frp-users/{uid}/rotate", d.frpUserRotate)
 	protected.HandleFunc("POST /servers/{id}/frp-users/{uid}/delete", d.frpUserDelete)
+	protected.HandleFunc("GET /servers/{id}/certs", d.certPanel)
+	protected.HandleFunc("POST /servers/{id}/certs/issue", d.certIssue)
+	protected.HandleFunc("POST /servers/{id}/certs/refresh", d.certRefresh)
 	mux.Handle("/", d.Auth.Middleware(protected))
 
 	return logging(mux)

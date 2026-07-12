@@ -94,5 +94,9 @@ h2 { font-size: 1.15rem; margin-top: 1.75rem; }
   border-radius: .4rem; color: #e5e9f0; }
 .cred-notice { background: #10241a; border: 1px solid #1c5e3a; border-radius: .5rem;
   padding: .75rem 1rem; margin-bottom: .75rem; }
+.cert-badge { display: inline-block; padding: .1rem .55rem; border-radius: .3rem; font-size: .8rem; font-weight: 600; }
+.cert-badge.green { background: #10241a; color: #69db7c; border: 1px solid #1c5e3a; }
+.cert-badge.amber { background: #2a2410; color: #ffd43b; border: 1px solid #5e5320; }
+.cert-badge.red { background: #2a1015; color: #ff8787; border: 1px solid #5e1c28; }
 
 @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
