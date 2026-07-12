@@ -22,5 +22,12 @@
   <div class="kv"><span>frps version</span><code>{{if $s.FrpsVersion}}{{$s.FrpsVersion}}{{else}}—{{end}}</code></div>
 </div>
 
-<p class="muted">Deploy, frp-user management and certificate actions arrive in M5–M10.</p>
+<div class="op-row">
+  <button class="btn" hx-post="/servers/{{$s.ID}}/test-ssh" hx-target="#ssh-result"
+          hx-swap="innerHTML" hx-indicator="#ssh-spin">Test SSH &amp; scan ports</button>
+  <span id="ssh-spin" class="htmx-indicator muted">connecting…</span>
+</div>
+<div id="ssh-result"></div>
+
+<p class="muted">Deploy, frp-user management and certificate actions arrive in M7–M10.</p>
 {{end}}

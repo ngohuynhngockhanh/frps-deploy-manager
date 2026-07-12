@@ -68,4 +68,12 @@ legend { color: #93a1c0; font-size: .85rem; padding: 0 .4rem; }
 .kv { display: flex; gap: .75rem; }
 .kv > span { width: 120px; color: #93a1c0; font-size: .85rem; }
 
+/* Ops */
+.op-row { display: flex; align-items: center; gap: .75rem; margin-top: 1rem; }
+.ssh-result { margin-top: 1rem; padding: 1rem; border-radius: .6rem; border: 1px solid #1e2742; background: #111830; }
+.ssh-result.bad { border-color: #7d1d2b; }
+.ssh-result ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+.htmx-indicator { opacity: 0; transition: opacity .2s; }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+
 @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }

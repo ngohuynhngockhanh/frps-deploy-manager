@@ -1,0 +1,24 @@
+{{define "_testssh.html"}}
+<div class="ssh-result {{if .OK}}ok{{else}}bad{{end}}">
+  {{if .Err}}
+    <p class="error">✗ {{.Err}}</p>
+  {{end}}
+  {{if .Fingerprint}}
+    <div class="kv"><span>Host key</span><code>{{.Fingerprint}}</code>{{if .NewlyPinned}} <span class="badge">pinned</span>{{end}}</div>
+  {{end}}
+  {{if .OK}}
+    <div class="kv"><span>Remote</span><code>{{.Facts.Uname}}</code></div>
+    <div class="kv"><span>nginx</span><code>{{if .Facts.HasNginx}}{{.Facts.NginxVer}}{{else}}not installed{{end}}</code></div>
+    <div class="kv"><span>certbot</span><code>{{if .Facts.HasCertbot}}{{.Facts.CertbotVer}}{{else}}not installed{{end}}</code></div>
+    <div class="kv"><span>systemd</span><code>{{if .Facts.HasSystemd}}yes{{else}}NO — required{{end}}</code></div>
+    {{if .Conflicts}}
+      <p class="error">Port conflicts:</p>
+      <ul>
+        {{range .Conflicts}}<li><code>{{.Port}}</code> ({{.Role}}) already in use — {{.Detail}}</li>{{end}}
+      </ul>
+    {{else}}
+      <p class="muted">✓ Ports free; host ready for deploy.</p>
+    {{end}}
+  {{end}}
+</div>
+{{end}}
