@@ -1,6 +1,20 @@
-{{define "title"}}Dashboard · frps-deploy-manager{{end}}
+{{define "title"}}Servers · frps-deploy-manager{{end}}
 {{define "content"}}
-<h1>frps-deploy-manager</h1>
-<p>Service is running. Full UI arrives in the next milestones.</p>
-<p>Health: <a href="/healthz"><code>/healthz</code></a></p>
+<div class="page-head">
+  <h1>Servers</h1>
+</div>
+{{if .Data}}
+<div class="cards">
+  {{range .Data}}
+  <a class="card" href="/servers/{{.ID}}">
+    <div class="card-title">{{.Name}}</div>
+    <div class="muted">{{.SSHUser}}@{{.Host}}:{{.SSHPort}}</div>
+    <div class="muted">{{.Domain}}</div>
+    <span class="badge">{{.Status}}</span>
+  </a>
+  {{end}}
+</div>
+{{else}}
+<p class="muted">No servers yet. Server management UI arrives in M4.</p>
+{{end}}
 {{end}}

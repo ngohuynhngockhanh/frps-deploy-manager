@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/auth"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/config"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/httpapi"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
@@ -60,12 +61,17 @@ func run(cfg config.Config) error {
 	}
 	defer st.Close()
 
+	authMgr := auth.NewManager(st)
+	if err := authMgr.SeedAdmin("admin", cfg.AdminInitialPassword); err != nil {
+		return fmt.Errorf("seed admin: %w", err)
+	}
+
 	renderer, err := web.NewRenderer()
 	if err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
 
-	handler := httpapi.NewRouter(httpapi.Deps{Render: renderer, Store: st})
+	handler := httpapi.NewRouter(httpapi.Deps{Render: renderer, Store: st, Auth: authMgr})
 
 	srv := &http.Server{
 		Addr:              cfg.BindAddr,

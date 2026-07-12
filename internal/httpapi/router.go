@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/auth"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/web"
 )
@@ -15,15 +16,25 @@ import (
 type Deps struct {
 	Render *web.Renderer
 	Store  *store.Store
+	Auth   *auth.Manager
 }
 
-// NewRouter builds the HTTP handler tree.
+// NewRouter builds the HTTP handler tree: public routes (login, static,
+// health) plus a session-protected subtree for everything else.
 func NewRouter(d Deps) http.Handler {
 	mux := http.NewServeMux()
 
+	// Public.
 	mux.Handle("GET /static/", web.StaticHandler())
 	mux.HandleFunc("GET /healthz", healthz)
-	mux.HandleFunc("GET /{$}", d.index)
+	mux.HandleFunc("GET /login", d.loginPage)
+	mux.HandleFunc("POST /login", d.loginSubmit)
+
+	// Protected subtree (session + CSRF enforced by Middleware).
+	protected := http.NewServeMux()
+	protected.HandleFunc("GET /{$}", d.index)
+	protected.HandleFunc("POST /logout", d.logout)
+	mux.Handle("/", d.Auth.Middleware(protected))
 
 	return logging(mux)
 }
@@ -32,8 +43,13 @@ func healthz(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (d Deps) index(w http.ResponseWriter, _ *http.Request) {
-	if err := d.Render.Render(w, "index.html", nil); err != nil {
+func (d Deps) index(w http.ResponseWriter, r *http.Request) {
+	servers, err := d.Store.ListServers()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := d.Render.Render(w, "index.html", d.page(r, servers)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

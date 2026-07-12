@@ -3,13 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{.CSRF}}">
   <title>{{block "title" .}}frps-deploy-manager{{end}}</title>
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/htmx.min.js" defer></script>
+  <script src="/static/sse.js" defer></script>
+  <script src="/static/csrf.js" defer></script>
 </head>
 <body>
-  <div class="wrap">
+  {{if .User}}
+  <header class="topbar">
+    <a class="brand" href="/">frps-deploy-manager</a>
+    <div class="spacer"></div>
+    <span class="who">{{.User}}</span>
+    <form method="post" action="/logout" class="inline">
+      <input type="hidden" name="_csrf" value="{{.CSRF}}">
+      <button class="btn ghost" type="submit">Logout</button>
+    </form>
+  </header>
+  {{end}}
+  <main class="wrap">
     {{block "content" .}}{{end}}
-  </div>
+  </main>
 </body>
 </html>{{end}}
