@@ -76,6 +76,8 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	// Purge freed pages (may retain old plaintext secrets from before sealing).
+	// In WAL mode, checkpoint+truncate first so VACUUM fully reclaims them.
+	_, _ = db.Exec("PRAGMA wal_checkpoint(TRUNCATE)")
 	_, _ = db.Exec("VACUUM")
 	return s, nil
 }
