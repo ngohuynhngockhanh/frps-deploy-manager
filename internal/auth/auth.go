@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -51,17 +52,19 @@ type attempt struct {
 type Manager struct {
 	store *store.Store
 
-	mu       sync.Mutex
-	sessions map[string]*session
-	attempts map[string]*attempt
+	mu         sync.Mutex
+	sessions   map[string]*session
+	attempts   map[string]*attempt // by username
+	ipAttempts map[string]*attempt // by client IP
 }
 
 // NewManager creates an auth manager backed by the store.
 func NewManager(st *store.Store) *Manager {
 	return &Manager{
-		store:    st,
-		sessions: make(map[string]*session),
-		attempts: make(map[string]*attempt),
+		store:      st,
+		sessions:   make(map[string]*session),
+		attempts:   make(map[string]*attempt),
+		ipAttempts: make(map[string]*attempt),
 	}
 }
 
@@ -84,21 +87,24 @@ func (m *Manager) SeedAdmin(username, password string) error {
 
 // Login verifies credentials and creates a session, returning the session token
 // and CSRF token. It enforces a per-username attempt limit.
-func (m *Manager) Login(username, password string) (token, csrf string, err error) {
-	if m.rateLimited(username) {
+func (m *Manager) Login(username, password, ip string) (token, csrf string, err error) {
+	if m.rateLimited(username) || m.ipRateLimited(ip) {
 		return "", "", ErrRateLimited
 	}
 	u, err := m.store.GetAppUserByUsername(username)
 	if err != nil {
 		m.recordFailure(username)
+		m.recordIPFailure(ip)
 		return "", "", ErrInvalidCredentials
 	}
 	ok, err := crypto.VerifyPassword(password, u.PwHash)
 	if err != nil || !ok {
 		m.recordFailure(username)
+		m.recordIPFailure(ip)
 		return "", "", ErrInvalidCredentials
 	}
 	m.clearAttempts(username)
+	m.clearIP(ip)
 
 	token = randomToken()
 	csrf = randomToken()
@@ -304,6 +310,55 @@ func (m *Manager) clearAttempts(username string) {
 	m.mu.Lock()
 	delete(m.attempts, username)
 	m.mu.Unlock()
+}
+
+// ipMaxAttempts is higher than per-username since a VPN IP may be shared.
+const ipMaxAttempts = 30
+
+func (m *Manager) ipRateLimited(ip string) bool {
+	if ip == "" {
+		return false
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	a := m.ipAttempts[ip]
+	if a == nil {
+		return false
+	}
+	if time.Since(a.first) > attemptWindow {
+		delete(m.ipAttempts, ip)
+		return false
+	}
+	return a.count >= ipMaxAttempts
+}
+
+func (m *Manager) recordIPFailure(ip string) {
+	if ip == "" {
+		return
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	a := m.ipAttempts[ip]
+	if a == nil || time.Since(a.first) > attemptWindow {
+		m.ipAttempts[ip] = &attempt{count: 1, first: time.Now()}
+		return
+	}
+	a.count++
+}
+
+func (m *Manager) clearIP(ip string) {
+	m.mu.Lock()
+	delete(m.ipAttempts, ip)
+	m.mu.Unlock()
+}
+
+// ClientIP extracts the client IP (no port) from a request's RemoteAddr.
+func ClientIP(r *http.Request) string {
+	addr := r.RemoteAddr
+	if i := strings.LastIndexByte(addr, ':'); i >= 0 {
+		return addr[:i]
+	}
+	return addr
 }
 
 // --- misc ---

@@ -47,9 +47,9 @@ func (d *Deployer) PointDNS(s store.Server) (string, error) {
 // DNS-01 using certbot's dns-cloudflare plugin (auto-renewable), then installs
 // an nginx block routing the base domain to the dashboard and *.<domain> to the
 // frps vhost, and records the cert.
-func (d *Deployer) IssueCertCloudflare(s store.Server, log LogFn) (store.Cert, error) {
+func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) (store.Cert, error) {
 	step := func(phase string, ok bool, detail string) {
-		_ = d.Store.AddDeployEvent(s.ID, phase, ok, detail)
+		_ = d.Store.AddDeployEvent(s.ID, actor, phase, ok, detail)
 		if log != nil {
 			log(phase, ok, detail)
 		}

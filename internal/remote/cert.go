@@ -12,9 +12,9 @@ import (
 // IssueCert installs the nginx server block for the server's domain, obtains (or
 // renews) a Let's Encrypt certificate via certbot --nginx, then reads the cert
 // back and records its metadata. staging uses LE's staging CA for testing.
-func (d *Deployer) IssueCert(s store.Server, staging bool, log LogFn) (store.Cert, error) {
+func (d *Deployer) IssueCert(s store.Server, staging bool, actor string, log LogFn) (store.Cert, error) {
 	step := func(phase string, ok bool, detail string) {
-		_ = d.Store.AddDeployEvent(s.ID, phase, ok, detail)
+		_ = d.Store.AddDeployEvent(s.ID, actor, phase, ok, detail)
 		if log != nil {
 			log(phase, ok, detail)
 		}

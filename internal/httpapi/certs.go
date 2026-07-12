@@ -36,7 +36,7 @@ func (d Deps) certIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	staging := r.PostFormValue("staging") != ""
-	if _, err := d.Deployer.IssueCert(s, staging, nil); err != nil {
+	if _, err := d.Deployer.IssueCert(s, staging, auth.CurrentUser(r), nil); err != nil {
 		d.renderCert(w, r, s, err.Error(), "")
 		return
 	}
@@ -77,7 +77,7 @@ func (d Deps) certIssueCloudflare(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if _, err := d.Deployer.IssueCertCloudflare(s, nil); err != nil {
+	if _, err := d.Deployer.IssueCertCloudflare(s, auth.CurrentUser(r), nil); err != nil {
 		d.renderCert(w, r, s, err.Error(), "")
 		return
 	}

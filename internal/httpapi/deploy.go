@@ -3,6 +3,7 @@ package httpapi
 import (
 	"net/http"
 
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/auth"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
 )
 
@@ -31,7 +32,7 @@ func (d Deps) deploy(w http.ResponseWriter, r *http.Request) {
 		steps = append(steps, deployStep{Phase: phase, OK: ok, Detail: detail})
 	}
 
-	updated, err := d.Deployer.Provision(s, logf)
+	updated, err := d.Deployer.Provision(s, auth.CurrentUser(r), logf)
 	res := deployResult{Steps: steps, Server: updated}
 	if err != nil {
 		res.Err = err.Error()

@@ -38,7 +38,7 @@ func (d Deps) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 
-	token, _, err := d.Auth.Login(username, password)
+	token, _, err := d.Auth.Login(username, password, auth.ClientIP(r))
 	if err != nil {
 		http.Redirect(w, r, "/login?err=1", http.StatusSeeOther)
 		return

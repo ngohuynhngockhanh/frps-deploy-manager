@@ -75,6 +75,8 @@ func Open(path string) (*Store, error) {
 		_ = db.Close()
 		return nil, err
 	}
+	// Purge freed pages (may retain old plaintext secrets from before sealing).
+	_, _ = db.Exec("VACUUM")
 	return s, nil
 }
 

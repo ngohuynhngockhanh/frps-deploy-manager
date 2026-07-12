@@ -35,9 +35,9 @@ type Deployer struct {
 // Provision deploys/updates frps + fp-multiuser on the server. It is idempotent:
 // re-running re-applies binaries, config and units and restarts the services.
 // (nginx + certbot are handled separately in the cert milestone.)
-func (d *Deployer) Provision(s store.Server, log LogFn) (store.Server, error) {
+func (d *Deployer) Provision(s store.Server, actor string, log LogFn) (store.Server, error) {
 	step := func(phase string, ok bool, detail string) {
-		_ = d.Store.AddDeployEvent(s.ID, phase, ok, detail)
+		_ = d.Store.AddDeployEvent(s.ID, actor, phase, ok, detail)
 		if log != nil {
 			log(phase, ok, detail)
 		}
