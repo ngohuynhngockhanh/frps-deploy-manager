@@ -38,6 +38,8 @@ func NewRouter(d Deps) http.Handler {
 	protected := http.NewServeMux()
 	protected.HandleFunc("GET /{$}", d.index)
 	protected.HandleFunc("POST /logout", d.logout)
+	protected.HandleFunc("GET /change-password", d.changePasswordPage)
+	protected.HandleFunc("POST /change-password", d.changePasswordSubmit)
 	// Admin-only: server lifecycle, deploy, certs, DNS.
 	protected.HandleFunc("GET /servers/new", requireAdmin(d.serverNew))
 	protected.HandleFunc("POST /servers", requireAdmin(d.serverCreate))

@@ -18,6 +18,7 @@
     {{if .IsAdmin}}<a class="navlink" href="/accounts">Accounts</a>{{end}}
     <div class="spacer"></div>
     <span class="who">{{.User}}{{if not .IsAdmin}} · manager{{end}}</span>
+    <a class="navlink" href="/change-password">Đổi MK</a>
     <form method="post" action="/logout" class="inline">
       <input type="hidden" name="_csrf" value="{{.CSRF}}">
       <button class="btn ghost" type="submit">Logout</button>

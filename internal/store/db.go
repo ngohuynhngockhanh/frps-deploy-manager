@@ -4,14 +4,55 @@ package store
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 
 	_ "modernc.org/sqlite" // pure-Go driver, registers "sqlite"
 )
 
+var b64 = base64.StdEncoding
+
+// Sealer encrypts/decrypts small secrets at rest (implemented by crypto.Sealer).
+type Sealer interface {
+	Seal([]byte) ([]byte, error)
+	Open([]byte) ([]byte, error)
+}
+
 // Store wraps the database handle and exposes typed CRUD methods.
 type Store struct {
-	db *sql.DB
+	db     *sql.DB
+	sealer Sealer
+}
+
+// SetSealer enables encryption-at-rest for stored secrets (dashboard passwords).
+func (st *Store) SetSealer(s Sealer) { st.sealer = s }
+
+// sealStr returns an "enc:"-prefixed sealed value; passthrough if no sealer/empty.
+func (st *Store) sealStr(s string) string {
+	if st.sealer == nil || s == "" {
+		return s
+	}
+	b, err := st.sealer.Seal([]byte(s))
+	if err != nil {
+		return s
+	}
+	return "enc:" + b64.EncodeToString(b)
+}
+
+// openStr reverses sealStr; legacy plaintext (no "enc:" prefix) passes through.
+func (st *Store) openStr(s string) string {
+	if st.sealer == nil || len(s) < 4 || s[:4] != "enc:" {
+		return s
+	}
+	raw, err := b64.DecodeString(s[4:])
+	if err != nil {
+		return s
+	}
+	pt, err := st.sealer.Open(raw)
+	if err != nil {
+		return s
+	}
+	return string(pt)
 }
 
 // Open opens (creating if needed) the SQLite database at path with WAL,

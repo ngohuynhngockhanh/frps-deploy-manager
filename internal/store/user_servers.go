@@ -59,6 +59,7 @@ func (st *Store) ListServersForUser(userID int64) ([]Server, error) {
 		if err != nil {
 			return nil, err
 		}
+		s.DashPassword = st.openStr(s.DashPassword)
 		out = append(out, s)
 	}
 	return out, rows.Err()

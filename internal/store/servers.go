@@ -83,7 +83,7 @@ func (st *Store) CreateServer(s Server) (Server, error) {
 		 bind_udp_port, vhost_https_port, tcp_mux, tcpmux_httpconnect_port)
 		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		s.Name, s.Host, s.SSHPort, s.SSHUser, s.AuthKind, s.KeyRef, s.HostKey, s.Project, s.RemoteBase,
-		s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort, s.DashUser, s.DashPassword,
+		s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort, s.DashUser, st.sealStr(s.DashPassword),
 		s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt, s.CreatedAt,
 		s.BindUDPPort, s.VhostHTTPSPort, b2i(s.TCPMux), s.TCPMuxHTTPConnectPort)
 	if err != nil {
@@ -100,6 +100,7 @@ func (st *Store) GetServer(id int64) (Server, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return Server{}, ErrNotFound
 	}
+	s.DashPassword = st.openStr(s.DashPassword)
 	return s, err
 }
 
@@ -116,6 +117,7 @@ func (st *Store) ListServers() ([]Server, error) {
 		if err != nil {
 			return nil, err
 		}
+		s.DashPassword = st.openStr(s.DashPassword)
 		out = append(out, s)
 	}
 	return out, rows.Err()
@@ -131,7 +133,7 @@ func (st *Store) UpdateServer(s Server) error {
 		WHERE id=?`,
 		s.Name, s.Host, s.SSHPort, s.SSHUser, s.AuthKind, s.KeyRef, s.HostKey, s.Project,
 		s.RemoteBase, s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort,
-		s.DashUser, s.DashPassword, s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt,
+		s.DashUser, st.sealStr(s.DashPassword), s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt,
 		s.BindUDPPort, s.VhostHTTPSPort, b2i(s.TCPMux), s.TCPMuxHTTPConnectPort,
 		s.ID)
 	if err != nil {

@@ -34,11 +34,12 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrRateLimited = errors.New("too many attempts, try again later")
 
 type session struct {
-	userID   int64
-	username string
-	role     string
-	csrf     string
-	expires  time.Time
+	userID     int64
+	username   string
+	role       string
+	mustChange bool
+	csrf       string
+	expires    time.Time
 }
 
 type attempt struct {
@@ -77,7 +78,7 @@ func (m *Manager) SeedAdmin(username, password string) error {
 	if err != nil {
 		return err
 	}
-	_, err = m.store.CreateAppUser(username, hash, store.RoleAdmin)
+	_, err = m.store.CreateAppUser(username, hash, store.RoleAdmin, true) // force change of the seeded default
 	return err
 }
 
@@ -103,7 +104,7 @@ func (m *Manager) Login(username, password string) (token, csrf string, err erro
 	csrf = randomToken()
 	exp := time.Now().Add(sessionTTL)
 	m.mu.Lock()
-	m.sessions[token] = &session{userID: u.ID, username: username, role: u.Role, csrf: csrf, expires: exp}
+	m.sessions[token] = &session{userID: u.ID, username: username, role: u.Role, mustChange: u.MustChangePassword, csrf: csrf, expires: exp}
 	m.mu.Unlock()
 	// Persist so the login survives a restart.
 	_ = m.store.SaveSession(store.Session{Token: token, Username: username, CSRF: csrf, ExpiresAt: exp.Unix()})
@@ -139,6 +140,7 @@ func (m *Manager) lookup(token string) *session {
 		if au, err := m.store.GetAppUserByUsername(ps.Username); err == nil {
 			s.userID = au.ID
 			s.role = au.Role
+			s.mustChange = au.MustChangePassword
 		}
 		m.mu.Lock()
 		m.sessions[token] = s
@@ -183,6 +185,11 @@ func (m *Manager) Middleware(next http.Handler) http.Handler {
 		// CSRF for mutating requests.
 		if isMutating(r.Method) && !m.checkCSRF(r, s.csrf) {
 			http.Error(w, "invalid CSRF token", http.StatusForbidden)
+			return
+		}
+		// Force a password change before anything else.
+		if s.mustChange && r.URL.Path != "/change-password" && r.URL.Path != "/logout" {
+			http.Redirect(w, r, "/change-password", http.StatusSeeOther)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(withUser(r, s)))
@@ -302,14 +309,22 @@ func (m *Manager) clearAttempts(username string) {
 // --- misc ---
 
 type userInfo struct {
-	id   int64
-	name string
-	role string
-	csrf string
+	id         int64
+	name       string
+	role       string
+	csrf       string
+	mustChange bool
 }
 
 func withUser(r *http.Request, s *session) context.Context {
-	return context.WithValue(r.Context(), userKey, userInfo{id: s.userID, name: s.username, role: s.role, csrf: s.csrf})
+	return context.WithValue(r.Context(), userKey, userInfo{id: s.userID, name: s.username, role: s.role, csrf: s.csrf, mustChange: s.mustChange})
+}
+
+// MustChangePassword reports whether the current operator must change their
+// password before continuing.
+func MustChangePassword(r *http.Request) bool {
+	v, _ := r.Context().Value(userKey).(userInfo)
+	return v.mustChange
 }
 
 func randomToken() string {

@@ -74,11 +74,12 @@ func run(cfg config.Config) error {
 	if err != nil {
 		return fmt.Errorf("init sealer: %w", err)
 	}
+	st.SetSealer(sealer) // encrypt dashboard passwords at rest
 	bld := &builder.Builder{
 		GoBin: cfg.GoBin, FRPSrcDir: cfg.FRPSrcDir,
 		FpmuSrcDir: cfg.FpmuSrcDir, CacheDir: cfg.BuildCacheDir(),
 	}
-	deployer := &remote.Deployer{Store: st, Builder: bld, Sealer: sealer, CFToken: cfg.CloudflareToken()}
+	deployer := &remote.Deployer{Store: st, Builder: bld, Sealer: sealer, CFToken: loadCloudflareToken(cfg, sealer)}
 
 	renderer, err := web.NewRenderer()
 	if err != nil {
@@ -128,6 +129,33 @@ func run(cfg config.Config) error {
 		defer cancel()
 		return srv.Shutdown(shutCtx)
 	}
+}
+
+// loadCloudflareToken returns the Cloudflare API token, encrypting a legacy
+// plaintext token file to <path>.enc (sealed at rest) on first run. Env
+// FDM_CLOUDFLARE_TOKEN takes precedence.
+func loadCloudflareToken(cfg config.Config, sealer *crypto.Sealer) string {
+	if v := strings.TrimSpace(os.Getenv("FDM_CLOUDFLARE_TOKEN")); v != "" {
+		return v
+	}
+	enc := cfg.CloudflareTokenPath() + ".enc"
+	if b, err := os.ReadFile(enc); err == nil {
+		if pt, err := sealer.Open(b); err == nil {
+			return strings.TrimSpace(string(pt))
+		}
+	}
+	// Migrate legacy plaintext token -> sealed, then remove the plaintext.
+	if b, err := os.ReadFile(cfg.CloudflareTokenPath()); err == nil {
+		tok := strings.TrimSpace(string(b))
+		if sealed, err := sealer.Seal([]byte(tok)); err == nil {
+			if os.WriteFile(enc, sealed, 0o600) == nil {
+				_ = os.Remove(cfg.CloudflareTokenPath())
+				log.Println("cloudflare token: migrated to encrypted-at-rest (data/cloudflare.token.enc)")
+			}
+		}
+		return tok
+	}
+	return ""
 }
 
 // certRefreshLoop periodically re-reads certificate expiry for all deployed
