@@ -22,6 +22,15 @@
   <div class="kv"><span>frps version</span><code>{{if $s.FrpsVersion}}{{$s.FrpsVersion}}{{else}}—{{end}}</code></div>
 </div>
 
+{{if $s.Domain}}
+<div class="op-row">
+  <button class="btn primary" onclick="window.open(location.protocol+'//'+location.hostname+':2051/?server={{$s.ID}}','_blank');return false;">
+    Mở dashboard frps (không cần login)
+  </button>
+  <span class="muted">proxy tự điền mật khẩu — dùng https://{{$s.Domain}} là dashboard gốc</span>
+</div>
+{{end}}
+
 <div class="op-row">
   <button class="btn" hx-post="/servers/{{$s.ID}}/test-ssh" hx-target="#ssh-result"
           hx-swap="innerHTML" hx-indicator="#ssh-spin">Test SSH &amp; scan ports</button>

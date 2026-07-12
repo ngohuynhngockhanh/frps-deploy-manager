@@ -202,6 +202,17 @@ func ClearSessionCookie(w http.ResponseWriter) {
 	})
 }
 
+// SessionUser returns the authenticated username from the request's session
+// cookie (validating + sliding it), or "". Used by the dashboard proxy, which
+// shares the session cookie (cookies are not port-scoped).
+func (m *Manager) SessionUser(r *http.Request) string {
+	s := m.lookup(CookieValue(r))
+	if s == nil {
+		return ""
+	}
+	return s.username
+}
+
 // CurrentUser returns the authenticated username, or "".
 func CurrentUser(r *http.Request) string {
 	v, _ := r.Context().Value(userKey).(userInfo)

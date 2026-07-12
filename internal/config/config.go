@@ -10,8 +10,11 @@ import (
 
 // Config is the resolved application configuration.
 type Config struct {
-	// BindAddr is the loopback address the HTTP server listens on.
+	// BindAddr is the address the HTTP admin UI listens on.
 	BindAddr string
+	// DashProxyAddr is the address for the frps-dashboard reverse proxy (lets
+	// the operator view a server's frps dashboard without a separate login).
+	DashProxyAddr string
 	// DataDir holds the SQLite DB, build cache, known_hosts and master key.
 	DataDir string
 	// FRPSrcDir is the local frp source tree used to cross-compile frps.
@@ -29,6 +32,7 @@ func Default() Config {
 	home, _ := os.UserHomeDir()
 	return Config{
 		BindAddr:             envOr("FDM_ADDR", "127.0.0.1:2050"),
+		DashProxyAddr:        envOr("FDM_DASH_ADDR", "0.0.0.0:2051"),
 		DataDir:              envOr("FDM_DATA_DIR", "data"),
 		FRPSrcDir:            envOr("FDM_FRP_SRC", filepath.Join(home, "ksp-frp")),
 		FpmuSrcDir:           envOr("FDM_FPMU_SRC", "third_party/fp-multiuser"),
