@@ -4,9 +4,20 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/config"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/httpapi"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/web"
 )
 
 // version is stamped at build time via -ldflags "-X main.version=...".
@@ -18,7 +29,7 @@ func main() {
 		addr        string
 	)
 	flag.BoolVar(&showVersion, "version", false, "print version and exit")
-	flag.StringVar(&addr, "addr", "127.0.0.1:2050", "local bind address (loopback only)")
+	flag.StringVar(&addr, "addr", "", "local bind address (loopback); overrides FDM_ADDR")
 	flag.Parse()
 
 	if showVersion {
@@ -26,15 +37,54 @@ func main() {
 		return
 	}
 
-	if err := run(addr); err != nil {
+	cfg := config.Default()
+	if addr != "" {
+		cfg.BindAddr = addr
+	}
+
+	if err := run(cfg); err != nil {
 		fmt.Fprintln(os.Stderr, "fatal:", err)
 		os.Exit(1)
 	}
 }
 
-// run is the real entrypoint; fleshed out in later milestones (HTTP server,
-// DB, auth). For M0 it is a placeholder so the binary links and prints version.
-func run(addr string) error {
-	fmt.Printf("frps-deploy-manager %s — not yet serving (addr=%s)\n", version, addr)
-	return nil
+func run(cfg config.Config) error {
+	if err := os.MkdirAll(cfg.DataDir, 0o700); err != nil {
+		return fmt.Errorf("create data dir: %w", err)
+	}
+
+	renderer, err := web.NewRenderer()
+	if err != nil {
+		return fmt.Errorf("parse templates: %w", err)
+	}
+
+	handler := httpapi.NewRouter(httpapi.Deps{Render: renderer})
+
+	srv := &http.Server{
+		Addr:              cfg.BindAddr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	// Graceful shutdown on SIGINT/SIGTERM.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	errCh := make(chan error, 1)
+	go func() {
+		log.Printf("frps-deploy-manager %s listening on http://%s", version, cfg.BindAddr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			errCh <- err
+		}
+	}()
+
+	select {
+	case err := <-errCh:
+		return fmt.Errorf("http server: %w", err)
+	case <-ctx.Done():
+		log.Println("shutting down…")
+		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return srv.Shutdown(shutCtx)
+	}
 }
