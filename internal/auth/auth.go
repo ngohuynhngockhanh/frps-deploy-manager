@@ -20,8 +20,8 @@ import (
 const (
 	// CookieName is the session cookie.
 	CookieName = "fdm_session"
-	// sessionTTL is the sliding session lifetime.
-	sessionTTL = 12 * time.Hour
+	// sessionTTL is the sliding session lifetime (persisted, survives restart).
+	sessionTTL = 7 * 24 * time.Hour
 	// lockout parameters for login attempts (per username).
 	maxAttempts   = 8
 	attemptWindow = 10 * time.Minute
@@ -99,9 +99,12 @@ func (m *Manager) Login(username, password string) (token, csrf string, err erro
 
 	token = randomToken()
 	csrf = randomToken()
+	exp := time.Now().Add(sessionTTL)
 	m.mu.Lock()
-	m.sessions[token] = &session{username: username, csrf: csrf, expires: time.Now().Add(sessionTTL)}
+	m.sessions[token] = &session{username: username, csrf: csrf, expires: exp}
 	m.mu.Unlock()
+	// Persist so the login survives a restart.
+	_ = m.store.SaveSession(store.Session{Token: token, Username: username, CSRF: csrf, ExpiresAt: exp.Unix()})
 	return token, csrf, nil
 }
 
@@ -110,21 +113,36 @@ func (m *Manager) Logout(token string) {
 	m.mu.Lock()
 	delete(m.sessions, token)
 	m.mu.Unlock()
+	_ = m.store.DeleteSession(token)
 }
 
-// lookup returns the session for a token, sliding its expiry, or nil.
+// lookup returns the session for a token, sliding its expiry, or nil. On a
+// cold cache (e.g. after a restart) it falls back to the persisted session.
 func (m *Manager) lookup(token string) *session {
 	if token == "" {
 		return nil
 	}
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	s := m.sessions[token]
+	m.mu.Unlock()
+
 	if s == nil {
-		return nil
+		// Cache miss — try the persisted store (survives restart).
+		ps, err := m.store.GetSession(token)
+		if err != nil {
+			return nil
+		}
+		s = &session{username: ps.Username, csrf: ps.CSRF, expires: time.Unix(ps.ExpiresAt, 0)}
+		m.mu.Lock()
+		m.sessions[token] = s
+		m.mu.Unlock()
 	}
+
 	if time.Now().After(s.expires) {
+		m.mu.Lock()
 		delete(m.sessions, token)
+		m.mu.Unlock()
+		_ = m.store.DeleteSession(token)
 		return nil
 	}
 	s.expires = time.Now().Add(sessionTTL)

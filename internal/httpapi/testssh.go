@@ -11,6 +11,7 @@ type portConflict struct {
 	Port   int
 	Role   string
 	Detail string
+	Own    bool // held by this server's own frps (not a real conflict)
 }
 
 type sshTestResult struct {
@@ -47,6 +48,9 @@ func (d Deps) testSSH(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Ports held by this server's own (already-deployed) frps are not conflicts.
+	ownFrps := client.Out("systemctl is-active frps-"+s.Project) == "active"
+
 	facts, err := client.Gather(remote.InterestingPorts(s))
 	if err != nil {
 		res.OK = false
@@ -57,7 +61,7 @@ func (d Deps) testSSH(w http.ResponseWriter, r *http.Request) {
 	res.Facts = facts
 	for port, detail := range facts.PortsInUse {
 		res.Conflicts = append(res.Conflicts, portConflict{
-			Port: port, Role: remote.PortRole(s, port), Detail: detail,
+			Port: port, Role: remote.PortRole(s, port), Detail: detail, Own: ownFrps,
 		})
 	}
 	_ = d.Render.RenderPartial(w, "_testssh.html", res)

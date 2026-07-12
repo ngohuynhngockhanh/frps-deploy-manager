@@ -1,0 +1,21 @@
+# systemd --user unit for the local admin UI (no root needed; requires linger:
+#   loginctl enable-linger $USER
+# Install:
+#   cp deploy/frps-deploy-manager.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now frps-deploy-manager
+[Unit]
+Description=frps-deploy-manager (local admin UI on :2050)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/maintain_6_18
+# Clear the desktop GPG/ssh agent so SSH uses the key files, not keyring keys.
+Environment=SSH_AUTH_SOCK=
+ExecStart=%h/maintain_6_18/bin/frps-deploy-manager --addr 0.0.0.0:2050
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

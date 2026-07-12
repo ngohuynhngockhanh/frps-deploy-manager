@@ -79,8 +79,9 @@ func (d *Deployer) IssueCertCloudflare(s store.Server, log LogFn) (store.Cert, e
 	}
 	step("cf-plugin", true, "certbot dns-cloudflare ready")
 
-	// 2) Credentials ini (0600).
-	ini := s.RemotePath() + "/conf/cloudflare.ini"
+	// 2) Credentials ini at a STABLE path (not the deploy dir, which can be
+	//    renamed) so certbot's auto-renew keeps working. 0600.
+	ini := "/etc/letsencrypt/cloudflare-" + s.Domain + ".ini"
 	if err := client.WriteFile(ini, []byte("dns_cloudflare_api_token = "+d.CFToken+"\n"), 0o600); err != nil {
 		return store.Cert{}, err
 	}

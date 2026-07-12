@@ -12,9 +12,10 @@
     <div class="kv"><span>certbot</span><code>{{if .Facts.HasCertbot}}{{.Facts.CertbotVer}}{{else}}not installed{{end}}</code></div>
     <div class="kv"><span>systemd</span><code>{{if .Facts.HasSystemd}}yes{{else}}NO — required{{end}}</code></div>
     {{if .Conflicts}}
-      <p class="error">Port conflicts:</p>
+      {{$real := false}}{{range .Conflicts}}{{if not .Own}}{{$real = true}}{{end}}{{end}}
+      {{if $real}}<p class="error">Port conflicts:</p>{{else}}<p class="muted">✓ Ports in use by this server's own frps (already deployed) — OK to re-deploy.</p>{{end}}
       <ul>
-        {{range .Conflicts}}<li><code>{{.Port}}</code> ({{.Role}}) already in use — {{.Detail}}</li>{{end}}
+        {{range .Conflicts}}<li><code>{{.Port}}</code> ({{.Role}}) {{if .Own}}<span class="muted">— running (this server's frps)</span>{{else}}<span class="error">already in use by another process — {{.Detail}}</span>{{end}}</li>{{end}}
       </ul>
     {{else}}
       <p class="muted">✓ Ports free; host ready for deploy.</p>
