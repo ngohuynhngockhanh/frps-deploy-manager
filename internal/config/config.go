@@ -15,6 +15,10 @@ type Config struct {
 	DataDir string
 	// FRPSrcDir is the local frp source tree used to cross-compile frps.
 	FRPSrcDir string
+	// FpmuSrcDir is the vendored fp-multiuser module directory.
+	FpmuSrcDir string
+	// GoBin is the Go toolchain used to cross-compile frps/fp-multiuser.
+	GoBin string
 	// AdminInitialPassword seeds the default admin account on first run.
 	AdminInitialPassword string
 }
@@ -26,6 +30,8 @@ func Default() Config {
 		BindAddr:             envOr("FDM_ADDR", "127.0.0.1:2050"),
 		DataDir:              envOr("FDM_DATA_DIR", "data"),
 		FRPSrcDir:            envOr("FDM_FRP_SRC", filepath.Join(home, "ksp-frp")),
+		FpmuSrcDir:           envOr("FDM_FPMU_SRC", "third_party/fp-multiuser"),
+		GoBin:                envOr("FDM_GO_BIN", filepath.Join(home, "go-sdk", "bin", "go")),
 		AdminInitialPassword: envOr("ADMIN_INITIAL_PASSWORD", "NhapHang123@"),
 	}
 }
