@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{.CSRF}}">
-  <title>{{block "title" .}}frps-deploy-manager{{end}}</title>
+  <title>{{block "title" .}}iNut FRPS{{end}}</title>
+  <link rel="icon" type="image/png" href="/static/logo.png">
   <link rel="stylesheet" href="/static/tailwind.css">
   <script src="/static/htmx.min.js" defer></script>
   <script src="/static/sse.js" defer></script>
@@ -13,7 +14,7 @@
 <body>
   {{if .User}}
   <header class="topbar">
-    <a class="brand" href="/">frps-deploy-manager</a>
+    <a class="brand" href="/"><img src="/static/logo.png" alt="iNut FRPS" class="brand-logo"></a>
     <div class="spacer"></div>
     <span class="who">{{.User}}</span>
     <form method="post" action="/logout" class="inline">

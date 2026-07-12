@@ -152,7 +152,7 @@ func (d *Deployer) Provision(s store.Server, log LogFn) (store.Server, error) {
 	step("units", true, "systemd units installed")
 
 	// 9) Start fp-multiuser first, then frps.
-	if _, err := client.MustRun(fmt.Sprintf("systemctl enable --now fp-multiuser-%s", s.Project)); err != nil {
+	if _, err := client.MustRun(fmt.Sprintf("systemctl enable fp-multiuser-%s && systemctl restart fp-multiuser-%s", s.Project, s.Project)); err != nil {
 		return fail("start-fpmultiuser", err)
 	}
 	if _, err := client.MustRun(fmt.Sprintf("systemctl enable %s && systemctl restart %s",

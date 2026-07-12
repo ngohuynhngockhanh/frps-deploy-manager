@@ -22,7 +22,9 @@ a { color: #7aa2f7; text-decoration: none; }
 
 .topbar { display: flex; align-items: center; gap: .75rem; padding: .75rem 1.25rem;
   background: #111830; border-bottom: 1px solid #1e2742; }
-.topbar .brand { font-weight: 600; color: #e5e9f0; }
+.topbar .brand { font-weight: 600; color: #e5e9f0; display: flex; align-items: center; }
+.brand-logo { height: 34px; width: auto; display: block; }
+.login-logo { display: block; max-width: 160px; margin: 0 auto 1rem; }
 .topbar .spacer { flex: 1; }
 .topbar .who { color: #93a1c0; }
 .inline { display: inline; }
