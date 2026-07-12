@@ -36,5 +36,8 @@
 </div>
 <div id="deploy-result"></div>
 
-<p class="muted">frp-user management and certificate actions arrive in M8–M10.</p>
+<h2>frps users</h2>
+<div id="frp-users" hx-get="/servers/{{$s.ID}}/frp-users" hx-trigger="load"></div>
+
+<p class="muted">Certificate management arrives in M9–M10.</p>
 {{end}}

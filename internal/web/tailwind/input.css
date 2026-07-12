@@ -84,4 +84,15 @@ legend { color: #93a1c0; font-size: .85rem; padding: 0 .4rem; }
 .deploy-log li.fail .phase { color: #ff8787; }
 .deploy-log .phase { font-weight: 600; margin-right: .5rem; }
 
+h2 { font-size: 1.15rem; margin-top: 1.75rem; }
+.tbl { width: 100%; border-collapse: collapse; margin: .5rem 0; }
+.tbl th, .tbl td { text-align: left; padding: .5rem .4rem; border-bottom: 1px solid #1e2742; font-size: .9rem; }
+.tbl th { color: #93a1c0; font-weight: 500; }
+.row-actions { display: flex; gap: .4rem; justify-content: flex-end; }
+.inline-form { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+.inline-form input { padding: .5rem .6rem; background: #0b1020; border: 1px solid #2a3556;
+  border-radius: .4rem; color: #e5e9f0; }
+.cred-notice { background: #10241a; border: 1px solid #1c5e3a; border-radius: .5rem;
+  padding: .75rem 1rem; margin-bottom: .75rem; }
+
 @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }

@@ -68,8 +68,12 @@ func (d *Deployer) Provision(s store.Server, log LogFn) (store.Server, error) {
 	if !facts.HasSystemd {
 		return fail("facts", fmt.Errorf("systemd not available on remote"))
 	}
-	if s.Status == "unprovisioned" && len(facts.PortsInUse) > 0 {
-		return fail("port-check", fmt.Errorf("ports already in use: %v", portList(facts)))
+	// Port-conflict guard: abort only when a port is held by something that is
+	// NOT our own frps unit (i.e. a genuine conflict on a fresh host). A
+	// re-deploy where our frps already holds the ports is fine.
+	oursActive := client.Out(fmt.Sprintf("systemctl is-active frps-%s 2>/dev/null", s.Project)) == "active"
+	if !oursActive && len(facts.PortsInUse) > 0 {
+		return fail("port-check", fmt.Errorf("ports already in use by another process: %v", portList(facts)))
 	}
 	step("facts", true, facts.Uname)
 

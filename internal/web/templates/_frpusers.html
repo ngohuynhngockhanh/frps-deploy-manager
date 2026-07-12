@@ -1,0 +1,41 @@
+{{define "_frpusers.html"}}
+{{$sid := .Server.ID}}
+<div class="frp-users">
+  {{if .NewCred}}
+    <div class="cred-notice">
+      <strong>New credential — copy it now (not shown again):</strong>
+      <div class="kv"><span>user</span><code>{{.NewCred.Username}}</code></div>
+      <div class="kv"><span>token</span><code>{{.NewCred.Token}}</code></div>
+      <div class="muted">frpc: <code>serverPort={{.Server.BindPort}}, user={{.NewCred.Username}}, metadatas.token={{.NewCred.Token}}</code></div>
+    </div>
+  {{end}}
+  {{if .SyncErr}}<p class="muted">{{.SyncErr}}</p>{{end}}
+
+  <table class="tbl">
+    <thead><tr><th>User</th><th></th></tr></thead>
+    <tbody>
+      {{range .Users}}
+      <tr>
+        <td><code>{{.Username}}</code></td>
+        <td class="row-actions">
+          <button class="btn ghost" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/rotate"
+                  hx-target="#frp-users" hx-swap="innerHTML">Rotate token</button>
+          <button class="btn danger" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/delete"
+                  hx-target="#frp-users" hx-swap="innerHTML"
+                  hx-confirm="Delete user {{.Username}}?">Delete</button>
+        </td>
+      </tr>
+      {{else}}
+      <tr><td colspan="2" class="muted">No frp users yet.</td></tr>
+      {{end}}
+    </tbody>
+  </table>
+
+  <form hx-post="/servers/{{$sid}}/frp-users" hx-target="#frp-users" hx-swap="innerHTML" class="inline-form">
+    <input type="hidden" name="_csrf" value="{{.CSRF}}">
+    <input name="username" placeholder="username" required>
+    <input name="token" placeholder="token (blank = auto-generate)">
+    <button class="btn primary" type="submit">Add user</button>
+  </form>
+</div>
+{{end}}

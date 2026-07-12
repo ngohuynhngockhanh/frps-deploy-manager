@@ -46,6 +46,10 @@ func NewRouter(d Deps) http.Handler {
 	protected.HandleFunc("POST /servers/{id}/delete", d.serverDelete)
 	protected.HandleFunc("POST /servers/{id}/test-ssh", d.testSSH)
 	protected.HandleFunc("POST /servers/{id}/deploy", d.deploy)
+	protected.HandleFunc("GET /servers/{id}/frp-users", d.frpUsersList)
+	protected.HandleFunc("POST /servers/{id}/frp-users", d.frpUserAdd)
+	protected.HandleFunc("POST /servers/{id}/frp-users/{uid}/rotate", d.frpUserRotate)
+	protected.HandleFunc("POST /servers/{id}/frp-users/{uid}/delete", d.frpUserDelete)
 	mux.Handle("/", d.Auth.Middleware(protected))
 
 	return logging(mux)
