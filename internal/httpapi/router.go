@@ -62,13 +62,31 @@ func healthz(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+// serverCard is a dashboard row: a server plus its cert expiry summary.
+type serverCard struct {
+	store.Server
+	HasCert  bool
+	CertDays int
+}
+
 func (d Deps) index(w http.ResponseWriter, r *http.Request) {
 	servers, err := d.Store.ListServers()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := d.Render.Render(w, "index.html", d.page(r, servers)); err != nil {
+	cards := make([]serverCard, 0, len(servers))
+	for _, s := range servers {
+		card := serverCard{Server: s}
+		if s.Domain != "" {
+			if c, err := d.Store.GetCert(s.ID, s.Domain); err == nil {
+				card.HasCert = true
+				card.CertDays = c.DaysRemaining()
+			}
+		}
+		cards = append(cards, card)
+	}
+	if err := d.Render.Render(w, "index.html", d.page(r, cards)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

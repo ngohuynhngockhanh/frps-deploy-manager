@@ -10,8 +10,11 @@
   <a class="card" href="/servers/{{.ID}}">
     <div class="card-title">{{.Name}}</div>
     <div class="muted">{{.SSHUser}}@{{.Host}}:{{.SSHPort}}</div>
-    <div class="muted">{{.Domain}}</div>
-    <span class="badge">{{.Status}}</span>
+    <div class="muted">{{if .Domain}}{{.Domain}}{{else}}no domain{{end}}</div>
+    <div class="card-badges">
+      <span class="badge">{{.Status}}</span>
+      {{if .HasCert}}<span class="cert-badge {{if lt .CertDays 8}}red{{else if lt .CertDays 31}}amber{{else}}green{{end}}">cert {{.CertDays}}d</span>{{end}}
+    </div>
   </a>
   {{end}}
 </div>

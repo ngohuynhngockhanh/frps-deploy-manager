@@ -103,6 +103,25 @@ func (d *Deployer) refreshCertFromRemote(client *ssh.Client, s store.Server) (st
 	return c, nil
 }
 
+// RefreshAllCerts re-reads expiry for every deployed server that has a domain.
+// Errors are returned per-server for logging; it never aborts the sweep.
+func (d *Deployer) RefreshAllCerts() []error {
+	servers, err := d.Store.ListServers()
+	if err != nil {
+		return []error{err}
+	}
+	var errs []error
+	for _, s := range servers {
+		if s.Domain == "" || s.Status != "ready" {
+			continue
+		}
+		if _, err := d.RefreshCert(s); err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", s.Domain, err))
+		}
+	}
+	return errs
+}
+
 // RefreshCert reconnects and re-reads the cert for expiry tracking.
 func (d *Deployer) RefreshCert(s store.Server) (store.Cert, error) {
 	client, err := ssh.Dial(SSHConfig(s))

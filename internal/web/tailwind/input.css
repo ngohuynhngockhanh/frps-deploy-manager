@@ -53,6 +53,7 @@ a { color: #7aa2f7; text-decoration: none; }
 .card-title { font-weight: 600; color: #e5e9f0; margin-bottom: .25rem; }
 .badge { display: inline-block; padding: .15rem .5rem; border-radius: .3rem;
   background: #1a2138; color: #93a1c0; font-size: .75rem; vertical-align: middle; }
+.card-badges { display: flex; gap: .4rem; margin-top: .5rem; flex-wrap: wrap; }
 
 /* Forms */
 .form { margin-top: 1rem; }

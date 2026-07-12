@@ -99,6 +99,9 @@ func run(cfg config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	// Background certificate-expiry refresh (every 12h, after a short delay).
+	go certRefreshLoop(ctx, deployer)
+
 	errCh := make(chan error, 1)
 	go func() {
 		log.Printf("frps-deploy-manager %s listening on http://%s", version, cfg.BindAddr)
@@ -115,5 +118,27 @@ func run(cfg config.Config) error {
 		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		return srv.Shutdown(shutCtx)
+	}
+}
+
+// certRefreshLoop periodically re-reads certificate expiry for all deployed
+// servers so the dashboard "days remaining" badges stay current.
+func certRefreshLoop(ctx context.Context, deployer *remote.Deployer) {
+	select {
+	case <-time.After(30 * time.Second):
+	case <-ctx.Done():
+		return
+	}
+	ticker := time.NewTicker(12 * time.Hour)
+	defer ticker.Stop()
+	for {
+		for _, err := range deployer.RefreshAllCerts() {
+			log.Printf("cert refresh: %v", err)
+		}
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		}
 	}
 }
