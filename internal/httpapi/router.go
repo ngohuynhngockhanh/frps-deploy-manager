@@ -55,6 +55,10 @@ func NewRouter(d Deps) http.Handler {
 	protected.HandleFunc("POST /servers/{id}/certs/refresh", d.certRefresh)
 	protected.HandleFunc("POST /servers/{id}/dns/cloudflare", d.certPointDNS)
 	protected.HandleFunc("POST /servers/{id}/certs/cloudflare", d.certIssueCloudflare)
+	// frps dashboard reverse proxy (Basic-auth injected). /api/* is the frp
+	// dashboard SPA's API namespace, unused by this admin UI.
+	protected.HandleFunc("/dash/", d.dashProxy)
+	protected.HandleFunc("/api/", d.dashProxy)
 	mux.Handle("/", d.Auth.Middleware(protected))
 
 	return logging(mux)

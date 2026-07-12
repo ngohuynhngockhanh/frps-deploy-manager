@@ -103,19 +103,6 @@ func run(cfg config.Config) error {
 	// Background certificate-expiry refresh (every 12h, after a short delay).
 	go certRefreshLoop(ctx, deployer)
 
-	// Secondary server: frps-dashboard reverse proxy (Basic-auth injected).
-	dashSrv := &http.Server{
-		Addr:              cfg.DashProxyAddr,
-		Handler:           httpapi.DashProxyHandler(deps),
-		ReadHeaderTimeout: 10 * time.Second,
-	}
-	go func() {
-		log.Printf("frps dashboard proxy listening on http://%s", cfg.DashProxyAddr)
-		if err := dashSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("dashboard proxy: %v", err)
-		}
-	}()
-
 	errCh := make(chan error, 1)
 	go func() {
 		log.Printf("frps-deploy-manager %s listening on http://%s", version, cfg.BindAddr)
@@ -131,7 +118,6 @@ func run(cfg config.Config) error {
 		log.Println("shutting down…")
 		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_ = dashSrv.Shutdown(shutCtx)
 		return srv.Shutdown(shutCtx)
 	}
 }

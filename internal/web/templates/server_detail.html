@@ -24,10 +24,10 @@
 
 {{if $s.Domain}}
 <div class="op-row">
-  <button class="btn primary" onclick="window.open(location.protocol+'//'+location.hostname+':2051/?server={{$s.ID}}','_blank');return false;">
+  <a class="btn primary" href="/dash/?server={{$s.ID}}" target="_blank" rel="noopener">
     Mở dashboard frps (không cần login)
-  </button>
-  <span class="muted">proxy tự điền mật khẩu — dùng https://{{$s.Domain}} là dashboard gốc</span>
+  </a>
+  <span class="muted">proxy trong 2050 (/dash), tự điền mật khẩu — dashboard gốc: https://{{$s.Domain}}</span>
 </div>
 {{end}}
 
