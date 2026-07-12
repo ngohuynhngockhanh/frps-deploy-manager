@@ -16,8 +16,11 @@ import (
 	"time"
 
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/auth"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/builder"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/config"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/crypto"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/httpapi"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/remote"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/web"
 )
@@ -66,12 +69,25 @@ func run(cfg config.Config) error {
 		return fmt.Errorf("seed admin: %w", err)
 	}
 
+	sealer, err := crypto.LoadOrCreateSealer(cfg.MasterKeyPath())
+	if err != nil {
+		return fmt.Errorf("init sealer: %w", err)
+	}
+	bld := &builder.Builder{
+		GoBin: cfg.GoBin, FRPSrcDir: cfg.FRPSrcDir,
+		FpmuSrcDir: cfg.FpmuSrcDir, CacheDir: cfg.BuildCacheDir(),
+	}
+	deployer := &remote.Deployer{Store: st, Builder: bld, Sealer: sealer}
+
 	renderer, err := web.NewRenderer()
 	if err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
 
-	handler := httpapi.NewRouter(httpapi.Deps{Render: renderer, Store: st, Auth: authMgr})
+	handler := httpapi.NewRouter(httpapi.Deps{
+		Render: renderer, Store: st, Auth: authMgr,
+		Deployer: deployer, Sealer: sealer,
+	})
 
 	srv := &http.Server{
 		Addr:              cfg.BindAddr,

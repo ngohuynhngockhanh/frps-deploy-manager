@@ -1,0 +1,19 @@
+{{define "_deploy.html"}}
+<div class="deploy-log {{if .Err}}bad{{end}}">
+  <ol>
+    {{range .Steps}}
+    <li class="{{if .OK}}ok{{else}}fail{{end}}">
+      <span class="phase">{{if .OK}}✓{{else}}✗{{end}} {{.Phase}}</span>
+      {{if .Detail}}<span class="muted">{{.Detail}}</span>{{end}}
+    </li>
+    {{end}}
+  </ol>
+  {{if .Err}}
+    <p class="error">Deploy failed: {{.Err}}</p>
+  {{else}}
+    <p class="muted">✓ Deploy complete — status <span class="badge">{{.Server.Status}}</span>,
+      frps {{.Server.FrpsVersion}}. Dashboard user <code>{{.Server.DashUser}}</code>,
+      password <code>{{.Server.DashPassword}}</code> (proxied at https://{{.Server.Domain}} after certs).</p>
+  {{end}}
+</div>
+{{end}}

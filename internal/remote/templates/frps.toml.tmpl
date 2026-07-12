@@ -1,0 +1,15 @@
+# Managed by frps-deploy-manager — do not edit by hand.
+bindPort = {{.BindPort}}
+vhostHTTPPort = {{.VhostHTTPPort}}
+
+webServer.addr = "127.0.0.1"
+webServer.port = {{.DashboardPort}}
+webServer.user = "{{.DashUser}}"
+webServer.password = "{{.DashPassword}}"
+
+# Per-user authentication delegated to fp-multiuser via the Login plugin.
+[[httpPlugins]]
+name = "multiuser"
+addr = "127.0.0.1:{{.FpmuPort}}"
+path = "/handler"
+ops = ["Login"]

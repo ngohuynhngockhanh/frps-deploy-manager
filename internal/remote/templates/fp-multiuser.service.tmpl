@@ -1,0 +1,12 @@
+[Unit]
+Description=fp-multiuser ({{.Project}}) — managed by frps-deploy-manager
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{.RemotePath}}/bin/fp-multiuser -l 127.0.0.1:{{.FpmuPort}} -f {{.RemotePath}}/conf/tokens.txt
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

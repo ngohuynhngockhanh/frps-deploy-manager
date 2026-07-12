@@ -76,4 +76,12 @@ legend { color: #93a1c0; font-size: .85rem; padding: 0 .4rem; }
 .htmx-indicator { opacity: 0; transition: opacity .2s; }
 .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
 
+.deploy-log { margin-top: 1rem; padding: 1rem; border-radius: .6rem; border: 1px solid #1e2742; background: #0d1428; }
+.deploy-log.bad { border-color: #7d1d2b; }
+.deploy-log ol { margin: 0; padding-left: 1.2rem; }
+.deploy-log li { margin: .2rem 0; }
+.deploy-log li.ok .phase { color: #69db7c; }
+.deploy-log li.fail .phase { color: #ff8787; }
+.deploy-log .phase { font-weight: 600; margin-right: .5rem; }
+
 @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }

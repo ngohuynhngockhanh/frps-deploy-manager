@@ -29,5 +29,12 @@
 </div>
 <div id="ssh-result"></div>
 
-<p class="muted">Deploy, frp-user management and certificate actions arrive in M7–M10.</p>
+<div class="op-row">
+  <button class="btn primary" hx-post="/servers/{{$s.ID}}/deploy" hx-target="#deploy-result"
+          hx-swap="innerHTML" hx-indicator="#deploy-spin" hx-disabled-elt="this">Deploy frps</button>
+  <span id="deploy-spin" class="htmx-indicator muted">deploying… (build → upload → systemd)</span>
+</div>
+<div id="deploy-result"></div>
+
+<p class="muted">frp-user management and certificate actions arrive in M8–M10.</p>
 {{end}}

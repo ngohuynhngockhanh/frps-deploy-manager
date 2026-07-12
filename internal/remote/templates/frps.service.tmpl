@@ -1,0 +1,14 @@
+[Unit]
+Description=frps ({{.Project}}) — managed by frps-deploy-manager
+After=network.target fp-multiuser-{{.Project}}.service
+Wants=fp-multiuser-{{.Project}}.service
+
+[Service]
+Type=simple
+ExecStart={{.RemotePath}}/bin/frps -c {{.RemotePath}}/conf/frps.toml
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target

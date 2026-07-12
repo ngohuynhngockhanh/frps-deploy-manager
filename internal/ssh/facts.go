@@ -49,7 +49,7 @@ func (c *Client) Gather(ports []int) (Facts, error) {
 	for _, p := range ports {
 		want[p] = true
 	}
-	out := c.Out("ss -ltnH 2>/dev/null || ss -ltn 2>/dev/null")
+	out := c.Out("PATH=/usr/sbin:/sbin:$PATH; ss -ltnH 2>/dev/null || ss -ltn 2>/dev/null")
 	for _, line := range strings.Split(out, "\n") {
 		fields := strings.Fields(line)
 		if len(fields) < 4 {

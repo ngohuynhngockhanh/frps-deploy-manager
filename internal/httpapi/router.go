@@ -8,15 +8,19 @@ import (
 	"time"
 
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/auth"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/crypto"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/remote"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/web"
 )
 
 // Deps are the collaborators the HTTP layer needs. It grows across milestones.
 type Deps struct {
-	Render *web.Renderer
-	Store  *store.Store
-	Auth   *auth.Manager
+	Render   *web.Renderer
+	Store    *store.Store
+	Auth     *auth.Manager
+	Deployer *remote.Deployer
+	Sealer   *crypto.Sealer
 }
 
 // NewRouter builds the HTTP handler tree: public routes (login, static,
@@ -41,6 +45,7 @@ func NewRouter(d Deps) http.Handler {
 	protected.HandleFunc("POST /servers/{id}", d.serverUpdate)
 	protected.HandleFunc("POST /servers/{id}/delete", d.serverDelete)
 	protected.HandleFunc("POST /servers/{id}/test-ssh", d.testSSH)
+	protected.HandleFunc("POST /servers/{id}/deploy", d.deploy)
 	mux.Handle("/", d.Auth.Middleware(protected))
 
 	return logging(mux)

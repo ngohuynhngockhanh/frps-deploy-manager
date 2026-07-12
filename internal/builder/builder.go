@@ -53,10 +53,16 @@ func (b *Builder) build(name, moduleDir, pkg string, force bool) (Artifact, erro
 	if err != nil {
 		return Artifact{}, fmt.Errorf("fingerprint %s: %w", name, err)
 	}
-	if err := os.MkdirAll(b.CacheDir, 0o755); err != nil {
+	// The output path must be absolute: `go build` runs with cmd.Dir set to the
+	// source module, so a relative -o would resolve against the wrong directory.
+	cacheDir, err := filepath.Abs(b.CacheDir)
+	if err != nil {
 		return Artifact{}, err
 	}
-	out := filepath.Join(b.CacheDir, fmt.Sprintf("%s-%s", name, hash[:12]))
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		return Artifact{}, err
+	}
+	out := filepath.Join(cacheDir, fmt.Sprintf("%s-%s", name, hash[:12]))
 
 	if !force {
 		if _, err := os.Stat(out); err == nil {
