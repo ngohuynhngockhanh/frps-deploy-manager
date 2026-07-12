@@ -63,6 +63,31 @@ own frps unit.
 - **fp-multiuser not active after add:** check `journalctl -u fp-multiuser-<proj>`;
   a malformed `tokens.txt` line is the usual cause.
 
+## Wildcard cert (`*.io.vnmap3d.com`) — manual DNS-01
+
+DNS for `vnmap3d.com` is at vdconline.vn (no API), so the wildcard cert is issued
+**manually** via DNS-01 and **must be renewed manually** (~every 60 days). It is a
+separate cert from the HTTP-01 `io.vnmap3d.com` dashboard cert.
+
+To issue/renew, run on the VPS and add the printed `_acme-challenge.io.vnmap3d.com`
+TXT record in the vdconline panel, wait for propagation, then press Enter:
+
+```bash
+certbot certonly --manual --preferred-challenges dns \
+  -d '*.io.vnmap3d.com' --cert-name io-wildcard \
+  --agree-tos -m kspprovn@gmail.com --no-eff-email
+# verify TXT first:  dig +short TXT _acme-challenge.io.vnmap3d.com @ns1.vdconline.vn
+```
+
+Cert lives at `/etc/letsencrypt/live/io-wildcard/`. For automatic wildcard renewal,
+move/delegate `io.vnmap3d.com` DNS to a provider with an API (e.g. Cloudflare) and
+switch to `certbot --dns-cloudflare`.
+
+To route frpc subdomain tunnels over HTTPS with this cert, add an nginx vhost
+`server_name *.io.vnmap3d.com;` (ssl_certificate → `io-wildcard`) proxying to the
+frps `vhostHTTPPort` (9002), and set `subDomainHost = "io.vnmap3d.com"` in
+`frps.toml`.
+
 ## Known follow-ups
 
 - Deploy currently runs synchronously (~45s); a job + SSE live-log stream is a
