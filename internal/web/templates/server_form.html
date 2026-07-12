@@ -49,6 +49,16 @@
     </div>
   </fieldset>
 
+  <fieldset>
+    <legend>Extra (tùy chọn — 0/tắt = bỏ qua)</legend>
+    <div class="grid2">
+      <label>bind_udp_port <input name="bind_udp_port" type="number" value="{{$s.BindUDPPort}}"></label>
+      <label>vhost_https_port <input name="vhost_https_port" type="number" value="{{$s.VhostHTTPSPort}}"></label>
+      <label>tcpmux_httpconnect_port <input name="tcpmux_httpconnect_port" type="number" value="{{$s.TCPMuxHTTPConnectPort}}"></label>
+      <label class="chk">tcp_mux <input name="tcp_mux" type="checkbox" value="1" {{if $s.TCPMux}}checked{{end}}></label>
+    </div>
+  </fieldset>
+
   <button class="btn primary" type="submit">{{if .Data.IsNew}}Create{{else}}Save{{end}}</button>
 </form>
 {{end}}

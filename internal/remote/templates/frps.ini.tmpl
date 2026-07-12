@@ -1,9 +1,13 @@
 # Managed by frps-deploy-manager — do not edit by hand.
 [common]
 bind_port = {{.BindPort}}
-vhost_http_port = {{.VhostHTTPPort}}
-{{if .Domain}}subdomain_host = {{.Domain}}{{end}}
-dashboard_addr = 127.0.0.1
+{{if .BindUDPPort}}bind_udp_port = {{.BindUDPPort}}
+{{end}}vhost_http_port = {{.VhostHTTPPort}}
+{{if .VhostHTTPSPort}}vhost_https_port = {{.VhostHTTPSPort}}
+{{end}}{{if .TCPMux}}tcp_mux = true
+{{end}}{{if .TCPMuxHTTPConnectPort}}tcpmux_httpconnect_port = {{.TCPMuxHTTPConnectPort}}
+{{end}}{{if .Domain}}subdomain_host = {{.Domain}}
+{{end}}dashboard_addr = 127.0.0.1
 dashboard_port = {{.DashboardPort}}
 dashboard_user = {{.DashUser}}
 dashboard_pwd = {{.DashPassword}}

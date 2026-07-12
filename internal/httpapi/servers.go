@@ -153,6 +153,10 @@ func parseServerForm(r *http.Request, base store.Server) (store.Server, error) {
 	s.DashboardPort = parseIntDefault(r.PostFormValue("dashboard_port"), s.DashboardPort)
 	s.VhostHTTPPort = parseIntDefault(r.PostFormValue("vhost_http_port"), s.VhostHTTPPort)
 	s.FpmuPort = parseIntDefault(r.PostFormValue("fpmu_port"), s.FpmuPort)
+	s.BindUDPPort = parseIntDefault(r.PostFormValue("bind_udp_port"), s.BindUDPPort)
+	s.VhostHTTPSPort = parseIntDefault(r.PostFormValue("vhost_https_port"), s.VhostHTTPSPort)
+	s.TCPMuxHTTPConnectPort = parseIntDefault(r.PostFormValue("tcpmux_httpconnect_port"), s.TCPMuxHTTPConnectPort)
+	s.TCPMux = r.PostFormValue("tcp_mux") != ""
 
 	if s.Name == "" || s.Host == "" {
 		return s, errors.New("Name and Host are required")

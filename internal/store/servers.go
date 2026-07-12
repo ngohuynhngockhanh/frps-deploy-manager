@@ -27,7 +27,12 @@ type Server struct {
 	DashboardPort  int
 	VhostHTTPPort  int
 	FpmuPort       int
-	DashUser       string
+	// Optional extras (frps.ini). Zero/false = omitted.
+	BindUDPPort           int
+	VhostHTTPSPort        int
+	TCPMux                bool
+	TCPMuxHTTPConnectPort int
+	DashUser              string
 	DashPassword   string
 	CertEmail      string
 	FrpsVersion    string
@@ -41,15 +46,26 @@ func (s Server) RemotePath() string { return s.RemoteBase + "/" + s.Project }
 
 const serverCols = `id, name, host, ssh_port, ssh_user, auth_kind, key_ref, host_key,
 	project, remote_base, domain, bind_port, dashboard_port, vhost_http_port, fpmu_port,
-	dash_user, dash_password, cert_email, frps_version, status, last_deployed_at, created_at`
+	dash_user, dash_password, cert_email, frps_version, status, last_deployed_at, created_at,
+	bind_udp_port, vhost_https_port, tcp_mux, tcpmux_httpconnect_port`
 
 func scanServer(row interface{ Scan(...any) error }) (Server, error) {
 	var s Server
+	var tcpMux int
 	err := row.Scan(&s.ID, &s.Name, &s.Host, &s.SSHPort, &s.SSHUser, &s.AuthKind, &s.KeyRef,
 		&s.HostKey, &s.Project, &s.RemoteBase, &s.Domain, &s.BindPort, &s.DashboardPort,
 		&s.VhostHTTPPort, &s.FpmuPort, &s.DashUser, &s.DashPassword, &s.CertEmail,
-		&s.FrpsVersion, &s.Status, &s.LastDeployedAt, &s.CreatedAt)
+		&s.FrpsVersion, &s.Status, &s.LastDeployedAt, &s.CreatedAt,
+		&s.BindUDPPort, &s.VhostHTTPSPort, &tcpMux, &s.TCPMuxHTTPConnectPort)
+	s.TCPMux = tcpMux != 0
 	return s, err
+}
+
+func b2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // CreateServer inserts a server and returns it with ID/CreatedAt populated.
@@ -63,11 +79,13 @@ func (st *Store) CreateServer(s Server) (Server, error) {
 	res, err := st.db.Exec(`INSERT INTO servers
 		(name, host, ssh_port, ssh_user, auth_kind, key_ref, host_key, project, remote_base,
 		 domain, bind_port, dashboard_port, vhost_http_port, fpmu_port, dash_user, dash_password,
-		 cert_email, frps_version, status, last_deployed_at, created_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		 cert_email, frps_version, status, last_deployed_at, created_at,
+		 bind_udp_port, vhost_https_port, tcp_mux, tcpmux_httpconnect_port)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		s.Name, s.Host, s.SSHPort, s.SSHUser, s.AuthKind, s.KeyRef, s.HostKey, s.Project, s.RemoteBase,
 		s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort, s.DashUser, s.DashPassword,
-		s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt, s.CreatedAt)
+		s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt, s.CreatedAt,
+		s.BindUDPPort, s.VhostHTTPSPort, b2i(s.TCPMux), s.TCPMuxHTTPConnectPort)
 	if err != nil {
 		return Server{}, fmt.Errorf("insert server: %w", err)
 	}
@@ -108,11 +126,13 @@ func (st *Store) UpdateServer(s Server) error {
 	res, err := st.db.Exec(`UPDATE servers SET
 		name=?, host=?, ssh_port=?, ssh_user=?, auth_kind=?, key_ref=?, host_key=?, project=?,
 		remote_base=?, domain=?, bind_port=?, dashboard_port=?, vhost_http_port=?, fpmu_port=?,
-		dash_user=?, dash_password=?, cert_email=?, frps_version=?, status=?, last_deployed_at=?
+		dash_user=?, dash_password=?, cert_email=?, frps_version=?, status=?, last_deployed_at=?,
+		bind_udp_port=?, vhost_https_port=?, tcp_mux=?, tcpmux_httpconnect_port=?
 		WHERE id=?`,
 		s.Name, s.Host, s.SSHPort, s.SSHUser, s.AuthKind, s.KeyRef, s.HostKey, s.Project,
 		s.RemoteBase, s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort,
 		s.DashUser, s.DashPassword, s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt,
+		s.BindUDPPort, s.VhostHTTPSPort, b2i(s.TCPMux), s.TCPMuxHTTPConnectPort,
 		s.ID)
 	if err != nil {
 		return fmt.Errorf("update server: %w", err)
