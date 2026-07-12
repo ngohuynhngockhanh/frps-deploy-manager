@@ -55,8 +55,12 @@ func (d Deps) frpUserAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	username := strings.TrimSpace(r.PostFormValue("username"))
 	token := strings.TrimSpace(r.PostFormValue("token"))
-	if username == "" {
-		d.renderFrpUsers(w, r, s, nil, "Username is required.")
+	if !validFrpName(username) {
+		d.renderFrpUsers(w, r, s, nil, "Username chỉ được chữ/số/._- (không xuống dòng, '=', khoảng trắng).")
+		return
+	}
+	if token != "" && !validFrpToken(token) {
+		d.renderFrpUsers(w, r, s, nil, "Token không hợp lệ (không xuống dòng/khoảng trắng).")
 		return
 	}
 	if token == "" {

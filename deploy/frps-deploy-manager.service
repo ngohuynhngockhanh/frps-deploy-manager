@@ -13,7 +13,10 @@ Type=simple
 WorkingDirectory=%h/maintain_6_18
 # Clear the desktop GPG/ssh agent so SSH uses the key files, not keyring keys.
 Environment=SSH_AUTH_SOCK=
-ExecStart=%h/maintain_6_18/bin/frps-deploy-manager --addr 0.0.0.0:2050
+# SECURITY: this tool has SSH-root over managed VPS. Default to loopback.
+# For remote access, bind a TRUSTED/VPN interface IP (e.g. --addr <vpn-ip>:2050)
+# and firewall it — NEVER 0.0.0.0 on an internet-facing host.
+ExecStart=%h/maintain_6_18/bin/frps-deploy-manager --addr 127.0.0.1:2050
 Restart=on-failure
 RestartSec=3
 

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -89,6 +90,13 @@ func run(cfg config.Config) error {
 		Deployer: deployer, Sealer: sealer,
 	}
 	handler := httpapi.NewRouter(deps)
+
+	// Security: this tool holds SSH-root over managed VPS. Warn if it listens on
+	// anything but loopback (must then be a trusted/VPN network, never internet).
+	if !strings.HasPrefix(cfg.BindAddr, "127.0.0.1") && !strings.HasPrefix(cfg.BindAddr, "localhost") {
+		log.Printf("SECURITY WARNING: listening on %s (non-loopback) over plain HTTP. "+
+			"Keep this on a trusted/VPN network + firewall; NEVER expose to the internet.", cfg.BindAddr)
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.BindAddr,

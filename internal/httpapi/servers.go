@@ -176,7 +176,33 @@ func parseServerForm(r *http.Request, base store.Server) (store.Server, error) {
 	if s.Name == "" || s.Host == "" {
 		return s, errors.New("Name and Host are required")
 	}
+	// Allowlist values that end up in remote root shell commands / paths.
+	if !validProject(s.Project) {
+		return s, errors.New("Project chỉ được chữ thường/số/gạch ngang (a-z 0-9 -)")
+	}
+	if !validPath(s.RemoteBase) {
+		return s, errors.New("Remote base phải là đường dẫn tuyệt đối hợp lệ (/...)")
+	}
+	if !validHostname(s.Host) && !isIPish(s.Host) {
+		return s, errors.New("Host không hợp lệ")
+	}
+	if !validHostname(s.Domain) {
+		return s, errors.New("Domain không phải hostname hợp lệ")
+	}
+	if !validEmail(s.CertEmail) {
+		return s, errors.New("Cert email không hợp lệ")
+	}
 	return s, nil
+}
+
+// isIPish accepts a bare IPv4/host so the Host field may be an IP.
+func isIPish(s string) bool {
+	for _, r := range s {
+		if !(r >= '0' && r <= '9') && r != '.' && r != ':' {
+			return false
+		}
+	}
+	return s != ""
 }
 
 func parseIntDefault(s string, def int) int {
