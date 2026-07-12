@@ -16,12 +16,26 @@ type cred struct {
 	Token    string
 }
 
+// frpUserRow is a user plus its decrypted token, for display.
+type frpUserRow struct {
+	store.FrpUser
+	Token string
+}
+
 type frpUsersView struct {
 	Server  store.Server
-	Users   []store.FrpUser
+	Users   []frpUserRow
 	NewCred *cred  // shown once after add/rotate (plaintext, unrecoverable later)
 	SyncErr string // non-fatal remote sync error
 	CSRF    string
+}
+
+// ServerAddr is the address frpc clients dial (domain if set, else host).
+func (v frpUsersView) ServerAddr() string {
+	if v.Server.Domain != "" {
+		return v.Server.Domain
+	}
+	return v.Server.Host
 }
 
 // frpUsersList renders the user panel (GET, loaded via htmx on the detail page).
@@ -127,7 +141,18 @@ func (d Deps) renderFrpUsers(w http.ResponseWriter, r *http.Request, s store.Ser
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	view := frpUsersView{Server: s, Users: users, NewCred: nc, SyncErr: syncErr, CSRF: auth.CSRFToken(r)}
+	blobs, _ := d.Store.FrpTokenBlobs(s.ID)
+	rows := make([]frpUserRow, 0, len(users))
+	for _, u := range users {
+		tok := ""
+		if b, ok := blobs[u.Username]; ok {
+			if pt, err := d.Sealer.Open(b); err == nil {
+				tok = string(pt)
+			}
+		}
+		rows = append(rows, frpUserRow{FrpUser: u, Token: tok})
+	}
+	view := frpUsersView{Server: s, Users: rows, NewCred: nc, SyncErr: syncErr, CSRF: auth.CSRFToken(r)}
 	if err := d.Render.RenderPartial(w, "_frpusers.html", view); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

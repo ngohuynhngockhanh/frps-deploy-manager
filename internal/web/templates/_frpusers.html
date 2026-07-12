@@ -11,22 +11,40 @@
   {{end}}
   {{if .SyncErr}}<p class="muted">{{.SyncErr}}</p>{{end}}
 
+  {{$addr := .ServerAddr}}{{$port := .Server.BindPort}}
   <table class="tbl">
-    <thead><tr><th>User</th><th></th></tr></thead>
+    <thead><tr><th>User</th><th>Token</th><th>frpc</th><th></th></tr></thead>
     <tbody>
       {{range .Users}}
       <tr>
         <td><code>{{.Username}}</code></td>
+        <td><code class="tok">{{.Token}}</code></td>
+        <td>
+          <details class="frpc">
+            <summary class="btn ghost">config</summary>
+<pre class="frpc-cfg">[common]
+server_addr = {{$addr}}
+server_port = {{$port}}
+user = {{.Username}}
+meta_token = {{.Token}}
+
+[web]
+type = http
+local_ip = 127.0.0.1
+local_port = 8080
+subdomain = {{.Username}}</pre>
+          </details>
+        </td>
         <td class="row-actions">
           <button class="btn ghost" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/rotate"
-                  hx-target="#frp-users" hx-swap="innerHTML">Rotate token</button>
+                  hx-target="#frp-users" hx-swap="innerHTML">Rotate</button>
           <button class="btn danger" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/delete"
                   hx-target="#frp-users" hx-swap="innerHTML"
                   hx-confirm="Delete user {{.Username}}?">Delete</button>
         </td>
       </tr>
       {{else}}
-      <tr><td colspan="2" class="muted">No frp users yet.</td></tr>
+      <tr><td colspan="4" class="muted">No frp users yet.</td></tr>
       {{end}}
     </tbody>
   </table>
