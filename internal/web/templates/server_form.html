@@ -1,0 +1,54 @@
+{{define "title"}}{{if .Data.IsNew}}New server{{else}}Edit server{{end}} · frps-deploy-manager{{end}}
+{{define "content"}}
+{{$s := .Data.Server}}
+<div class="page-head">
+  <h1>{{if .Data.IsNew}}New server{{else}}Edit {{$s.Name}}{{end}}</h1>
+  <a class="btn ghost" href="{{if .Data.IsNew}}/{{else}}/servers/{{$s.ID}}{{end}}">Cancel</a>
+</div>
+{{if .Data.Err}}<p class="error">{{.Data.Err}}</p>{{end}}
+
+<form method="post" action="{{if .Data.IsNew}}/servers{{else}}/servers/{{$s.ID}}{{end}}" class="form">
+  <input type="hidden" name="_csrf" value="{{.CSRF}}">
+
+  <fieldset>
+    <legend>Connection</legend>
+    <div class="grid2">
+      <label>Name <input name="name" value="{{$s.Name}}" required></label>
+      <label>Host <input name="host" value="{{$s.Host}}" placeholder="77.88.206.18" required></label>
+      <label>SSH user <input name="ssh_user" value="{{$s.SSHUser}}"></label>
+      <label>SSH port <input name="ssh_port" type="number" value="{{$s.SSHPort}}"></label>
+      <label>Auth kind
+        <select name="auth_kind">
+          <option value="agent" {{if eq $s.AuthKind "agent"}}selected{{end}}>ssh-agent</option>
+          <option value="key_path" {{if eq $s.AuthKind "key_path"}}selected{{end}}>key file path</option>
+        </select>
+      </label>
+      <label>Key path <input name="key_ref" value="{{$s.KeyRef}}" placeholder="~/.ssh/id_ed25519 (if key_path)"></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Deployment</legend>
+    <div class="grid2">
+      <label>Project <input name="project" value="{{$s.Project}}"></label>
+      <label>Remote base <input name="remote_base" value="{{$s.RemoteBase}}"></label>
+      <label>Domain <input name="domain" value="{{$s.Domain}}" placeholder="io.vnmap3d.com"></label>
+      <label>Cert email <input name="cert_email" value="{{$s.CertEmail}}" placeholder="you@example.com"></label>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Ports &amp; dashboard</legend>
+    <div class="grid2">
+      <label>bindPort (control) <input name="bind_port" type="number" value="{{$s.BindPort}}"></label>
+      <label>dashboard <input name="dashboard_port" type="number" value="{{$s.DashboardPort}}"></label>
+      <label>vhostHTTP <input name="vhost_http_port" type="number" value="{{$s.VhostHTTPPort}}"></label>
+      <label>fp-multiuser <input name="fpmu_port" type="number" value="{{$s.FpmuPort}}"></label>
+      <label>dashboard user <input name="dash_user" value="{{$s.DashUser}}"></label>
+      <label>dashboard password <input name="dash_password" type="password" placeholder="{{if .Data.IsNew}}auto-generate if blank{{else}}unchanged if blank{{end}}"></label>
+    </div>
+  </fieldset>
+
+  <button class="btn primary" type="submit">{{if .Data.IsNew}}Create{{else}}Save{{end}}</button>
+</form>
+{{end}}

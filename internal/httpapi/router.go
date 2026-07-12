@@ -34,6 +34,12 @@ func NewRouter(d Deps) http.Handler {
 	protected := http.NewServeMux()
 	protected.HandleFunc("GET /{$}", d.index)
 	protected.HandleFunc("POST /logout", d.logout)
+	protected.HandleFunc("GET /servers/new", d.serverNew)
+	protected.HandleFunc("POST /servers", d.serverCreate)
+	protected.HandleFunc("GET /servers/{id}", d.serverDetail)
+	protected.HandleFunc("GET /servers/{id}/edit", d.serverEdit)
+	protected.HandleFunc("POST /servers/{id}", d.serverUpdate)
+	protected.HandleFunc("POST /servers/{id}/delete", d.serverDelete)
 	mux.Handle("/", d.Auth.Middleware(protected))
 
 	return logging(mux)

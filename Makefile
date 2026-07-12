@@ -66,6 +66,19 @@ vet:
 clean:
 	rm -rf bin dist
 
+## ui: rebuild the embedded Tailwind stylesheet from the input file.
+## Downloads the Tailwind standalone CLI into .toolcache/ on first use.
+TW := .toolcache/tailwindcss
+ui:
+	@if [ ! -x "$(TW)" ]; then \
+		mkdir -p .toolcache; \
+		echo "Downloading Tailwind standalone CLI ..."; \
+		curl -fsSL -o $(TW) https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64; \
+		chmod +x $(TW); \
+	fi
+	$(TW) -i internal/web/tailwind/input.css -o internal/web/static/tailwind.css --minify
+	@echo "rebuilt internal/web/static/tailwind.css"
+
 ## build-frps: cross-compile frps (linux/amd64) from ~/ksp-frp into bin/
 build-frps:
 	@mkdir -p bin

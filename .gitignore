@@ -8,6 +8,9 @@
 # go toolchain (bootstrapped locally)
 /.gocache/
 
+# downloaded build tools (tailwind CLI, etc.)
+/.toolcache/
+
 # editor / OS
 *.swp
 .DS_Store

@@ -1,0 +1,26 @@
+{{define "title"}}{{.Data.Name}} · frps-deploy-manager{{end}}
+{{define "content"}}
+{{$s := .Data}}
+<div class="page-head">
+  <h1>{{$s.Name}} <span class="badge">{{$s.Status}}</span></h1>
+  <div class="actions">
+    <a class="btn ghost" href="/servers/{{$s.ID}}/edit">Edit</a>
+    <form method="post" action="/servers/{{$s.ID}}/delete" class="inline"
+          onsubmit="return confirm('Delete server {{$s.Name}}?');">
+      <input type="hidden" name="_csrf" value="{{.CSRF}}">
+      <button class="btn danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="kv"><span>SSH</span><code>{{$s.SSHUser}}@{{$s.Host}}:{{$s.SSHPort}}</code></div>
+  <div class="kv"><span>Auth</span><code>{{$s.AuthKind}}{{if $s.KeyRef}} ({{$s.KeyRef}}){{end}}</code></div>
+  <div class="kv"><span>Remote path</span><code>{{$s.RemotePath}}</code></div>
+  <div class="kv"><span>Domain</span><code>{{if $s.Domain}}{{$s.Domain}}{{else}}—{{end}}</code></div>
+  <div class="kv"><span>Ports</span><code>bind {{$s.BindPort}} · dash {{$s.DashboardPort}} · vhost {{$s.VhostHTTPPort}} · fpmu {{$s.FpmuPort}}</code></div>
+  <div class="kv"><span>frps version</span><code>{{if $s.FrpsVersion}}{{$s.FrpsVersion}}{{else}}—{{end}}</code></div>
+</div>
+
+<p class="muted">Deploy, frp-user management and certificate actions arrive in M5–M10.</p>
+{{end}}
