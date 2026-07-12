@@ -1,0 +1,136 @@
+package store
+
+import (
+	"database/sql"
+	"errors"
+	"fmt"
+	"time"
+)
+
+// ErrNotFound is returned when a row does not exist.
+var ErrNotFound = errors.New("not found")
+
+// Server is a managed VPS target and its frps deployment parameters.
+type Server struct {
+	ID             int64
+	Name           string
+	Host           string
+	SSHPort        int
+	SSHUser        string
+	AuthKind       string // agent | key_path | key_blob
+	KeyRef         string
+	HostKey        string // pinned SSH host public key (TOFU)
+	Project        string
+	RemoteBase     string
+	Domain         string
+	BindPort       int
+	DashboardPort  int
+	VhostHTTPPort  int
+	FpmuPort       int
+	DashUser       string
+	DashPassword   string
+	CertEmail      string
+	FrpsVersion    string
+	Status         string
+	LastDeployedAt int64
+	CreatedAt      int64
+}
+
+// RemotePath returns the deploy directory, e.g. /root/inut-jsc/frps.
+func (s Server) RemotePath() string { return s.RemoteBase + "/" + s.Project }
+
+const serverCols = `id, name, host, ssh_port, ssh_user, auth_kind, key_ref, host_key,
+	project, remote_base, domain, bind_port, dashboard_port, vhost_http_port, fpmu_port,
+	dash_user, dash_password, cert_email, frps_version, status, last_deployed_at, created_at`
+
+func scanServer(row interface{ Scan(...any) error }) (Server, error) {
+	var s Server
+	err := row.Scan(&s.ID, &s.Name, &s.Host, &s.SSHPort, &s.SSHUser, &s.AuthKind, &s.KeyRef,
+		&s.HostKey, &s.Project, &s.RemoteBase, &s.Domain, &s.BindPort, &s.DashboardPort,
+		&s.VhostHTTPPort, &s.FpmuPort, &s.DashUser, &s.DashPassword, &s.CertEmail,
+		&s.FrpsVersion, &s.Status, &s.LastDeployedAt, &s.CreatedAt)
+	return s, err
+}
+
+// CreateServer inserts a server and returns it with ID/CreatedAt populated.
+func (st *Store) CreateServer(s Server) (Server, error) {
+	if s.CreatedAt == 0 {
+		s.CreatedAt = time.Now().Unix()
+	}
+	if s.Status == "" {
+		s.Status = "unprovisioned"
+	}
+	res, err := st.db.Exec(`INSERT INTO servers
+		(name, host, ssh_port, ssh_user, auth_kind, key_ref, host_key, project, remote_base,
+		 domain, bind_port, dashboard_port, vhost_http_port, fpmu_port, dash_user, dash_password,
+		 cert_email, frps_version, status, last_deployed_at, created_at)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		s.Name, s.Host, s.SSHPort, s.SSHUser, s.AuthKind, s.KeyRef, s.HostKey, s.Project, s.RemoteBase,
+		s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort, s.DashUser, s.DashPassword,
+		s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt, s.CreatedAt)
+	if err != nil {
+		return Server{}, fmt.Errorf("insert server: %w", err)
+	}
+	s.ID, _ = res.LastInsertId()
+	return s, nil
+}
+
+// GetServer fetches one server by id.
+func (st *Store) GetServer(id int64) (Server, error) {
+	row := st.db.QueryRow(`SELECT `+serverCols+` FROM servers WHERE id = ?`, id)
+	s, err := scanServer(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Server{}, ErrNotFound
+	}
+	return s, err
+}
+
+// ListServers returns all servers ordered by name.
+func (st *Store) ListServers() ([]Server, error) {
+	rows, err := st.db.Query(`SELECT ` + serverCols + ` FROM servers ORDER BY name, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Server
+	for rows.Next() {
+		s, err := scanServer(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
+// UpdateServer overwrites the mutable fields of an existing server.
+func (st *Store) UpdateServer(s Server) error {
+	res, err := st.db.Exec(`UPDATE servers SET
+		name=?, host=?, ssh_port=?, ssh_user=?, auth_kind=?, key_ref=?, host_key=?, project=?,
+		remote_base=?, domain=?, bind_port=?, dashboard_port=?, vhost_http_port=?, fpmu_port=?,
+		dash_user=?, dash_password=?, cert_email=?, frps_version=?, status=?, last_deployed_at=?
+		WHERE id=?`,
+		s.Name, s.Host, s.SSHPort, s.SSHUser, s.AuthKind, s.KeyRef, s.HostKey, s.Project,
+		s.RemoteBase, s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort,
+		s.DashUser, s.DashPassword, s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt,
+		s.ID)
+	if err != nil {
+		return fmt.Errorf("update server: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// DeleteServer removes a server (cascades to its users/certs/events).
+func (st *Store) DeleteServer(id int64) error {
+	res, err := st.db.Exec(`DELETE FROM servers WHERE id = ?`, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

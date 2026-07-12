@@ -17,6 +17,7 @@ import (
 
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/config"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/httpapi"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/web"
 )
 
@@ -53,12 +54,18 @@ func run(cfg config.Config) error {
 		return fmt.Errorf("create data dir: %w", err)
 	}
 
+	st, err := store.Open(cfg.DBPath())
+	if err != nil {
+		return fmt.Errorf("open store: %w", err)
+	}
+	defer st.Close()
+
 	renderer, err := web.NewRenderer()
 	if err != nil {
 		return fmt.Errorf("parse templates: %w", err)
 	}
 
-	handler := httpapi.NewRouter(httpapi.Deps{Render: renderer})
+	handler := httpapi.NewRouter(httpapi.Deps{Render: renderer, Store: st})
 
 	srv := &http.Server{
 		Addr:              cfg.BindAddr,

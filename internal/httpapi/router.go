@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/web"
 )
 
 // Deps are the collaborators the HTTP layer needs. It grows across milestones.
 type Deps struct {
 	Render *web.Renderer
+	Store  *store.Store
 }
 
 // NewRouter builds the HTTP handler tree.

@@ -15,7 +15,12 @@ LDFLAGS  := -X main.version=$(VERSION)
 export GOFLAGS ?=
 export CGO_ENABLED = 0
 
-.PHONY: all build run test tidy fmt vet clean bootstrap-go build-frps build-fpmultiuser
+# This host's pure-Go DNS resolver times out on the local stub resolver, so
+# module fetching (tidy/get) must use the cgo resolver. Compiled binaries stay
+# CGO_ENABLED=0 (static); only the go tooling's DNS uses cgo.
+GET_ENV := CGO_ENABLED=1 GODEBUG=netdns=cgo
+
+.PHONY: all build run test tidy fmt vet clean bootstrap-go build-frps build-fpmultiuser get
 
 all: build
 
@@ -46,7 +51,11 @@ test:
 	$(GO) test ./...
 
 tidy:
-	$(GO) mod tidy
+	$(GET_ENV) $(GO) mod tidy
+
+## get: add a dependency, e.g. `make get PKG=modernc.org/sqlite@latest`
+get:
+	$(GET_ENV) $(GO) get $(PKG)
 
 fmt:
 	$(GO) fmt ./...
