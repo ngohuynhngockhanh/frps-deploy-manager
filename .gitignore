@@ -1,0 +1,18 @@
+# build artifacts
+/bin/
+/dist/
+
+# runtime data (DB, build cache, known_hosts, master key)
+/data/
+
+# go toolchain (bootstrapped locally)
+/.gocache/
+
+# editor / OS
+*.swp
+.DS_Store
+
+# secrets that must never be committed
+*.pem
+*.key
+!third_party/**/*.key
