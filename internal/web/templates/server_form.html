@@ -34,6 +34,7 @@
       <label>Remote base <input name="remote_base" value="{{$s.RemoteBase}}"></label>
       <label>Domain <input name="domain" value="{{$s.Domain}}" placeholder="io.vnmap3d.com"></label>
       <label>Cert email <input name="cert_email" value="{{$s.CertEmail}}" placeholder="you@example.com"></label>
+      <label>Cloudflare API token (zone của domain này) <input name="cf_token" type="password" placeholder="{{if $s.CFToken}}đã có — để trống nếu giữ nguyên{{else}}trống = dùng token global{{end}}"></label>
     </div>
   </fieldset>
 

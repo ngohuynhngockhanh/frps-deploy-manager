@@ -158,6 +158,9 @@ func parseServerForm(r *http.Request, base store.Server) (store.Server, error) {
 	if v := r.PostFormValue("dash_password"); v != "" {
 		s.DashPassword = v
 	}
+	if v := strings.TrimSpace(r.PostFormValue("cf_token")); v != "" {
+		s.CFToken = v
+	}
 	if ak := r.PostFormValue("auth_kind"); ak != "" {
 		s.AuthKind = ak
 	}

@@ -85,7 +85,7 @@ func (d Deps) certIssueCloudflare(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d Deps) renderCert(w http.ResponseWriter, r *http.Request, s store.Server, errMsg, okMsg string) {
-	view := certView{Server: s, Err: errMsg, Msg: okMsg, CSRF: auth.CSRFToken(r), HasCF: d.Deployer.CFToken != "", IsAdmin: auth.IsAdmin(r)}
+	view := certView{Server: s, Err: errMsg, Msg: okMsg, CSRF: auth.CSRFToken(r), HasCF: d.Deployer.CFToken != "" || s.CFToken != "", IsAdmin: auth.IsAdmin(r)}
 	if s.Domain != "" {
 		if c, err := d.Store.GetCert(s.ID, s.Domain); err == nil {
 			view.Cert = &c

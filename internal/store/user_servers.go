@@ -60,6 +60,7 @@ func (st *Store) ListServersForUser(userID int64) ([]Server, error) {
 			return nil, err
 		}
 		s.DashPassword = st.openStr(s.DashPassword)
+		s.CFToken = st.openStr(s.CFToken)
 		out = append(out, s)
 	}
 	return out, rows.Err()

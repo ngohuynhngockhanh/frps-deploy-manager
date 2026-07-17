@@ -20,11 +20,13 @@
 
     {{if .IsAdmin}}
     <div class="op-row">
+      {{if not .HasCF}}
       <form hx-post="/servers/{{$sid}}/certs/issue" hx-target="#cert-panel" hx-swap="innerHTML"
             hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
         <input type="hidden" name="_csrf" value="{{.CSRF}}">
-        <button class="btn primary" type="submit">{{if .HasCert}}Renew{{else}}Issue{{end}} certificate</button>
+        <button class="btn primary" type="submit">{{if .HasCert}}Renew{{else}}Issue{{end}} certificate (HTTP-01)</button>
       </form>
+      {{end}}
       {{if .HasCert}}
       <form hx-post="/servers/{{$sid}}/certs/refresh" hx-target="#cert-panel" hx-swap="innerHTML" class="inline">
         <input type="hidden" name="_csrf" value="{{.CSRF}}">

@@ -35,6 +35,7 @@ type Server struct {
 	DashUser              string
 	DashPassword   string
 	CertEmail      string
+	CFToken        string // per-server Cloudflare token (sealed at rest); "" = use global
 	FrpsVersion    string
 	Status         string
 	LastDeployedAt int64
@@ -47,7 +48,7 @@ func (s Server) RemotePath() string { return s.RemoteBase + "/" + s.Project }
 const serverCols = `id, name, host, ssh_port, ssh_user, auth_kind, key_ref, host_key,
 	project, remote_base, domain, bind_port, dashboard_port, vhost_http_port, fpmu_port,
 	dash_user, dash_password, cert_email, frps_version, status, last_deployed_at, created_at,
-	bind_udp_port, vhost_https_port, tcp_mux, tcpmux_httpconnect_port`
+	bind_udp_port, vhost_https_port, tcp_mux, tcpmux_httpconnect_port, cf_token`
 
 func scanServer(row interface{ Scan(...any) error }) (Server, error) {
 	var s Server
@@ -56,7 +57,7 @@ func scanServer(row interface{ Scan(...any) error }) (Server, error) {
 		&s.HostKey, &s.Project, &s.RemoteBase, &s.Domain, &s.BindPort, &s.DashboardPort,
 		&s.VhostHTTPPort, &s.FpmuPort, &s.DashUser, &s.DashPassword, &s.CertEmail,
 		&s.FrpsVersion, &s.Status, &s.LastDeployedAt, &s.CreatedAt,
-		&s.BindUDPPort, &s.VhostHTTPSPort, &tcpMux, &s.TCPMuxHTTPConnectPort)
+		&s.BindUDPPort, &s.VhostHTTPSPort, &tcpMux, &s.TCPMuxHTTPConnectPort, &s.CFToken)
 	s.TCPMux = tcpMux != 0
 	return s, err
 }
@@ -80,12 +81,12 @@ func (st *Store) CreateServer(s Server) (Server, error) {
 		(name, host, ssh_port, ssh_user, auth_kind, key_ref, host_key, project, remote_base,
 		 domain, bind_port, dashboard_port, vhost_http_port, fpmu_port, dash_user, dash_password,
 		 cert_email, frps_version, status, last_deployed_at, created_at,
-		 bind_udp_port, vhost_https_port, tcp_mux, tcpmux_httpconnect_port)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		 bind_udp_port, vhost_https_port, tcp_mux, tcpmux_httpconnect_port, cf_token)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		s.Name, s.Host, s.SSHPort, s.SSHUser, s.AuthKind, s.KeyRef, s.HostKey, s.Project, s.RemoteBase,
 		s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort, s.DashUser, st.sealStr(s.DashPassword),
 		s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt, s.CreatedAt,
-		s.BindUDPPort, s.VhostHTTPSPort, b2i(s.TCPMux), s.TCPMuxHTTPConnectPort)
+		s.BindUDPPort, s.VhostHTTPSPort, b2i(s.TCPMux), s.TCPMuxHTTPConnectPort, st.sealStr(s.CFToken))
 	if err != nil {
 		return Server{}, fmt.Errorf("insert server: %w", err)
 	}
@@ -101,6 +102,7 @@ func (st *Store) GetServer(id int64) (Server, error) {
 		return Server{}, ErrNotFound
 	}
 	s.DashPassword = st.openStr(s.DashPassword)
+	s.CFToken = st.openStr(s.CFToken)
 	return s, err
 }
 
@@ -118,6 +120,7 @@ func (st *Store) ListServers() ([]Server, error) {
 			return nil, err
 		}
 		s.DashPassword = st.openStr(s.DashPassword)
+		s.CFToken = st.openStr(s.CFToken)
 		out = append(out, s)
 	}
 	return out, rows.Err()
@@ -129,12 +132,12 @@ func (st *Store) UpdateServer(s Server) error {
 		name=?, host=?, ssh_port=?, ssh_user=?, auth_kind=?, key_ref=?, host_key=?, project=?,
 		remote_base=?, domain=?, bind_port=?, dashboard_port=?, vhost_http_port=?, fpmu_port=?,
 		dash_user=?, dash_password=?, cert_email=?, frps_version=?, status=?, last_deployed_at=?,
-		bind_udp_port=?, vhost_https_port=?, tcp_mux=?, tcpmux_httpconnect_port=?
+		bind_udp_port=?, vhost_https_port=?, tcp_mux=?, tcpmux_httpconnect_port=?, cf_token=?
 		WHERE id=?`,
 		s.Name, s.Host, s.SSHPort, s.SSHUser, s.AuthKind, s.KeyRef, s.HostKey, s.Project,
 		s.RemoteBase, s.Domain, s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort,
 		s.DashUser, st.sealStr(s.DashPassword), s.CertEmail, s.FrpsVersion, s.Status, s.LastDeployedAt,
-		s.BindUDPPort, s.VhostHTTPSPort, b2i(s.TCPMux), s.TCPMuxHTTPConnectPort,
+		s.BindUDPPort, s.VhostHTTPSPort, b2i(s.TCPMux), s.TCPMuxHTTPConnectPort, st.sealStr(s.CFToken),
 		s.ID)
 	if err != nil {
 		return fmt.Errorf("update server: %w", err)

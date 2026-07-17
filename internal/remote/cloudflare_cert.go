@@ -12,8 +12,17 @@ import (
 // PointDNS upserts A records for <domain> and *.<domain> in Cloudflare, both
 // pointing at the VPS public IP (DNS-only, not proxied — frps control/vhost
 // ports are non-HTTP and must reach the VPS directly). Returns the IP used.
+// cfToken returns the server's own Cloudflare token if set, else the global one.
+func (d *Deployer) cfToken(s store.Server) string {
+	if s.CFToken != "" {
+		return s.CFToken
+	}
+	return d.CFToken
+}
+
 func (d *Deployer) PointDNS(s store.Server) (string, error) {
-	if d.CFToken == "" {
+	tok := d.cfToken(s)
+	if tok == "" {
 		return "", fmt.Errorf("no Cloudflare token configured")
 	}
 	if s.Domain == "" {
@@ -29,7 +38,7 @@ func (d *Deployer) PointDNS(s store.Server) (string, error) {
 		return "", fmt.Errorf("could not determine VPS public IP (got %q)", ip)
 	}
 
-	cf := cloudflare.New(d.CFToken)
+	cf := cloudflare.New(tok)
 	zoneID, _, err := cf.ZoneID(s.Domain)
 	if err != nil {
 		return "", err
@@ -54,7 +63,8 @@ func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) 
 			log(phase, ok, detail)
 		}
 	}
-	if d.CFToken == "" {
+	tok := d.cfToken(s)
+	if tok == "" {
 		return store.Cert{}, fmt.Errorf("no Cloudflare token configured")
 	}
 	if s.Domain == "" || s.CertEmail == "" {
@@ -82,7 +92,7 @@ func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) 
 	// 2) Credentials ini at a STABLE path (not the deploy dir, which can be
 	//    renamed) so certbot's auto-renew keeps working. 0600.
 	ini := "/etc/letsencrypt/cloudflare-" + s.Domain + ".ini"
-	if err := client.WriteFile(ini, []byte("dns_cloudflare_api_token = "+d.CFToken+"\n"), 0o600); err != nil {
+	if err := client.WriteFile(ini, []byte("dns_cloudflare_api_token = "+tok+"\n"), 0o600); err != nil {
 		return store.Cert{}, err
 	}
 
