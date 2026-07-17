@@ -7,6 +7,7 @@ bind_port = {{.BindPort}}
 {{end}}{{if .TCPMux}}tcp_mux = true
 {{end}}{{if .TCPMuxHTTPConnectPort}}tcpmux_httpconnect_port = {{.TCPMuxHTTPConnectPort}}
 {{end}}{{if .Domain}}subdomain_host = {{.Domain}}
+{{end}}{{if .Domain2}}subdomain_host2 = {{.Domain2}}
 {{end}}dashboard_addr = 127.0.0.1
 dashboard_port = {{.DashboardPort}}
 dashboard_user = {{.DashUser}}
