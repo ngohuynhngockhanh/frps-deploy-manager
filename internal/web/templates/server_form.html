@@ -35,6 +35,8 @@
       <label>Domain <input name="domain" value="{{$s.Domain}}" placeholder="io.vnmap3d.com"></label>
       <label>Cert email <input name="cert_email" value="{{$s.CertEmail}}" placeholder="you@example.com"></label>
       <label>Cloudflare API token (zone của domain này) <input name="cf_token" type="password" placeholder="{{if $s.CFToken}}đã có — để trống nếu giữ nguyên{{else}}trống = dùng token global{{end}}"></label>
+      <label>Domain phụ (cùng instance) <input name="domain2" value="{{$s.Domain2}}" placeholder="baotoantech.io.vn (tùy chọn)"></label>
+      <label>Cloudflare token (domain phụ) <input name="cf_token2" type="password" placeholder="{{if $s.CFToken2}}đã có — để trống nếu giữ nguyên{{else}}token zone của domain phụ{{end}}"></label>
     </div>
   </fieldset>
 

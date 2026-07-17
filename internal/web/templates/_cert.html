@@ -1,60 +1,72 @@
 {{define "_cert.html"}}
 {{$sid := .Server.ID}}
+{{$csrf := .CSRF}}
+{{$admin := .IsAdmin}}
 <div class="cert-panel">
   {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
   {{if .Msg}}<p class="muted">✓ {{.Msg}}</p>{{end}}
 
-  {{if not .Server.Domain}}
+  {{if not .Domains}}
     <p class="muted">Set a domain on this server to enable certificates.</p>
   {{else}}
-    {{if .HasCert}}
-      {{$days := .Cert.DaysRemaining}}
-      <div class="kv"><span>Domain</span><code>{{.Cert.Domain}}</code></div>
-      <div class="kv"><span>Issuer</span><code>{{.Cert.Issuer}}</code></div>
-      <div class="kv"><span>Expires in</span>
-        <span class="cert-badge {{if lt $days 8}}red{{else if lt $days 31}}amber{{else}}green{{end}}">{{$days}} days</span>
+    {{range .Domains}}
+    <div class="cert-domain">
+      <div class="kv"><span>Domain</span>
+        <code>{{.Domain}}</code>
+        {{if .Primary}}<span class="badge">chính</span>{{else}}<span class="badge">phụ</span>{{end}}
       </div>
-    {{else}}
-      <p class="muted">No certificate yet for <code>{{.Server.Domain}}</code>.</p>
-    {{end}}
-
-    {{if .IsAdmin}}
-    <div class="op-row">
-      {{if not .HasCF}}
-      <form hx-post="/servers/{{$sid}}/certs/issue" hx-target="#cert-panel" hx-swap="innerHTML"
-            hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
-        <input type="hidden" name="_csrf" value="{{.CSRF}}">
-        <button class="btn primary" type="submit">{{if .HasCert}}Renew{{else}}Issue{{end}} certificate (HTTP-01)</button>
-      </form>
-      {{end}}
       {{if .HasCert}}
-      <form hx-post="/servers/{{$sid}}/certs/refresh" hx-target="#cert-panel" hx-swap="innerHTML" class="inline">
-        <input type="hidden" name="_csrf" value="{{.CSRF}}">
-        <button class="btn ghost" type="submit">Refresh expiry</button>
-      </form>
+        {{$days := .Cert.DaysRemaining}}
+        <div class="kv"><span>Issuer</span><code>{{.Cert.Issuer}}</code></div>
+        <div class="kv"><span>Expires in</span>
+          <span class="cert-badge {{if lt $days 8}}red{{else if lt $days 31}}amber{{else}}green{{end}}">{{$days}} days</span>
+        </div>
+      {{else}}
+        <p class="muted">No certificate yet for <code>{{.Domain}}</code>.</p>
       {{end}}
-      <span id="cert-spin" class="htmx-indicator muted">running certbot…</span>
-    </div>
 
-    {{if .HasCF}}
-    <div class="cf-box">
-      <div class="muted">Cloudflare (DNS-01 wildcard — <code>*.{{.Server.Domain}}</code>, auto-renew):</div>
+      {{if $admin}}
       <div class="op-row">
-        <form hx-post="/servers/{{$sid}}/dns/cloudflare" hx-target="#cert-panel" hx-swap="innerHTML"
-              hx-indicator="#cf-spin" hx-disabled-elt="find button" class="inline">
-          <input type="hidden" name="_csrf" value="{{.CSRF}}">
-          <button class="btn" type="submit">Point DNS → VPS</button>
+        {{if and .Primary (not .HasCF)}}
+        <form hx-post="/servers/{{$sid}}/certs/issue" hx-target="#cert-panel" hx-swap="innerHTML"
+              hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
+          <input type="hidden" name="_csrf" value="{{$csrf}}">
+          <input type="hidden" name="domain" value="{{.Domain}}">
+          <button class="btn primary" type="submit">{{if .HasCert}}Renew{{else}}Issue{{end}} certificate (HTTP-01)</button>
         </form>
-        <form hx-post="/servers/{{$sid}}/certs/cloudflare" hx-target="#cert-panel" hx-swap="innerHTML"
-              hx-indicator="#cf-spin" hx-disabled-elt="find button" class="inline">
-          <input type="hidden" name="_csrf" value="{{.CSRF}}">
-          <button class="btn primary" type="submit">Issue wildcard cert</button>
+        {{end}}
+        {{if .HasCert}}
+        <form hx-post="/servers/{{$sid}}/certs/refresh" hx-target="#cert-panel" hx-swap="innerHTML" class="inline">
+          <input type="hidden" name="_csrf" value="{{$csrf}}">
+          <input type="hidden" name="domain" value="{{.Domain}}">
+          <button class="btn ghost" type="submit">Refresh expiry</button>
         </form>
-        <span id="cf-spin" class="htmx-indicator muted">Cloudflare…</span>
+        {{end}}
       </div>
+
+      {{if .HasCF}}
+      <div class="cf-box">
+        <div class="muted">Cloudflare (DNS-01 wildcard — <code>*.{{.Domain}}</code>, auto-renew):</div>
+        <div class="op-row">
+          <form hx-post="/servers/{{$sid}}/dns/cloudflare" hx-target="#cert-panel" hx-swap="innerHTML"
+                hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
+            <input type="hidden" name="_csrf" value="{{$csrf}}">
+            <input type="hidden" name="domain" value="{{.Domain}}">
+            <button class="btn" type="submit">Point DNS → VPS</button>
+          </form>
+          <form hx-post="/servers/{{$sid}}/certs/cloudflare" hx-target="#cert-panel" hx-swap="innerHTML"
+                hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
+            <input type="hidden" name="_csrf" value="{{$csrf}}">
+            <input type="hidden" name="domain" value="{{.Domain}}">
+            <button class="btn primary" type="submit">Issue wildcard cert</button>
+          </form>
+        </div>
+      </div>
+      {{end}}
+      {{end}}{{/* admin */}}
     </div>
-    {{end}}
-    {{end}}{{/* IsAdmin */}}
+    {{end}}{{/* range */}}
+    <span id="cert-spin" class="htmx-indicator muted">running certbot…</span>
   {{end}}
 </div>
 {{end}}

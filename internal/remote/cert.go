@@ -74,7 +74,7 @@ func (d *Deployer) IssueCert(s store.Server, staging bool, actor string, log Log
 	step("certbot", true, "certificate obtained/renewed")
 
 	// 3) Read the cert and record metadata.
-	c, err := d.refreshCertFromRemote(client, s)
+	c, err := d.refreshCertFromRemote(client, s, s.Domain)
 	if err != nil {
 		return store.Cert{}, err
 	}
@@ -82,10 +82,10 @@ func (d *Deployer) IssueCert(s store.Server, staging bool, actor string, log Log
 	return c, nil
 }
 
-// refreshCertFromRemote fetches the live cert PEM over sftp, parses it and
-// upserts the record.
-func (d *Deployer) refreshCertFromRemote(client *ssh.Client, s store.Server) (store.Cert, error) {
-	certPath := "/etc/letsencrypt/live/" + s.Domain + "/cert.pem"
+// refreshCertFromRemote fetches the live cert PEM for the given domain over
+// sftp, parses it and upserts the record keyed by (server, domain).
+func (d *Deployer) refreshCertFromRemote(client *ssh.Client, s store.Server, domain string) (store.Cert, error) {
+	certPath := "/etc/letsencrypt/live/" + domain + "/cert.pem"
 	pemBytes, err := client.ReadFile(certPath)
 	if err != nil {
 		return store.Cert{}, fmt.Errorf("read cert: %w", err)
@@ -95,7 +95,7 @@ func (d *Deployer) refreshCertFromRemote(client *ssh.Client, s store.Server) (st
 		return store.Cert{}, err
 	}
 	c.ServerID = s.ID
-	c.Domain = s.Domain
+	c.Domain = domain
 	c.CertPath = certPath
 	if err := d.Store.UpsertCert(c); err != nil {
 		return store.Cert{}, err
@@ -118,18 +118,29 @@ func (d *Deployer) RefreshAllCerts() []error {
 		if _, err := d.RefreshCert(s); err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", s.Domain, err))
 		}
+		if s.Domain2 != "" {
+			if _, err := d.RefreshCertDomain(s, s.Domain2); err != nil {
+				errs = append(errs, fmt.Errorf("%s: %w", s.Domain2, err))
+			}
+		}
 	}
 	return errs
 }
 
-// RefreshCert reconnects and re-reads the cert for expiry tracking.
+// RefreshCert reconnects and re-reads the primary domain's cert.
 func (d *Deployer) RefreshCert(s store.Server) (store.Cert, error) {
+	return d.RefreshCertDomain(s, s.Domain)
+}
+
+// RefreshCertDomain re-reads the cert for a specific domain on the server (the
+// primary or the optional secondary) for expiry tracking.
+func (d *Deployer) RefreshCertDomain(s store.Server, domain string) (store.Cert, error) {
 	client, err := ssh.Dial(SSHConfig(s))
 	if err != nil {
 		return store.Cert{}, err
 	}
 	defer client.Close()
-	return d.refreshCertFromRemote(client, s)
+	return d.refreshCertFromRemote(client, s, domain)
 }
 
 // parseCert extracts metadata from a PEM certificate.

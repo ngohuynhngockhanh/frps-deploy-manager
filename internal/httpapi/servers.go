@@ -161,6 +161,10 @@ func parseServerForm(r *http.Request, base store.Server) (store.Server, error) {
 	if v := strings.TrimSpace(r.PostFormValue("cf_token")); v != "" {
 		s.CFToken = v
 	}
+	s.Domain2 = strings.TrimSpace(r.PostFormValue("domain2"))
+	if v := strings.TrimSpace(r.PostFormValue("cf_token2")); v != "" {
+		s.CFToken2 = v
+	}
 	if ak := r.PostFormValue("auth_kind"); ak != "" {
 		s.AuthKind = ak
 	}
@@ -191,6 +195,9 @@ func parseServerForm(r *http.Request, base store.Server) (store.Server, error) {
 	}
 	if !validHostname(s.Domain) {
 		return s, errors.New("Domain không phải hostname hợp lệ")
+	}
+	if s.Domain2 != "" && !validHostname(s.Domain2) {
+		return s, errors.New("Domain phụ không phải hostname hợp lệ")
 	}
 	if !validEmail(s.CertEmail) {
 		return s, errors.New("Cert email không hợp lệ")

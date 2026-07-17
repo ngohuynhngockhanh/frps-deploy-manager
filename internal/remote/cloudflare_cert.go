@@ -21,11 +21,16 @@ func (d *Deployer) cfToken(s store.Server) string {
 }
 
 func (d *Deployer) PointDNS(s store.Server) (string, error) {
-	tok := d.cfToken(s)
+	return d.PointDNSFor(s, s.Domain, d.cfToken(s))
+}
+
+// PointDNSFor upserts A records for a specific domain + *.domain using the given
+// Cloudflare token (so a secondary domain in another zone works too).
+func (d *Deployer) PointDNSFor(s store.Server, domain, tok string) (string, error) {
 	if tok == "" {
 		return "", fmt.Errorf("no Cloudflare token configured")
 	}
-	if s.Domain == "" {
+	if domain == "" {
 		return "", fmt.Errorf("server has no domain")
 	}
 	client, err := ssh.Dial(SSHConfig(s))
@@ -39,15 +44,15 @@ func (d *Deployer) PointDNS(s store.Server) (string, error) {
 	}
 
 	cf := cloudflare.New(tok)
-	zoneID, _, err := cf.ZoneID(s.Domain)
+	zoneID, _, err := cf.ZoneID(domain)
 	if err != nil {
 		return "", err
 	}
-	if err := cf.UpsertA(zoneID, s.Domain, ip, false); err != nil {
-		return "", fmt.Errorf("A %s: %w", s.Domain, err)
+	if err := cf.UpsertA(zoneID, domain, ip, false); err != nil {
+		return "", fmt.Errorf("A %s: %w", domain, err)
 	}
-	if err := cf.UpsertA(zoneID, "*."+s.Domain, ip, false); err != nil {
-		return "", fmt.Errorf("A *.%s: %w", s.Domain, err)
+	if err := cf.UpsertA(zoneID, "*."+domain, ip, false); err != nil {
+		return "", fmt.Errorf("A *.%s: %w", domain, err)
 	}
 	return ip, nil
 }
@@ -57,19 +62,28 @@ func (d *Deployer) PointDNS(s store.Server) (string, error) {
 // an nginx block routing the base domain to the dashboard and *.<domain> to the
 // frps vhost, and records the cert.
 func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) (store.Cert, error) {
+	return d.IssueCertCloudflareFor(s, s.Domain, d.cfToken(s), actor, log)
+}
+
+// IssueCertCloudflareFor issues a wildcard cert for a specific domain using the
+// given Cloudflare token and installs its own nginx block. Used for both the
+// primary and the optional secondary domain of a server.
+func (d *Deployer) IssueCertCloudflareFor(s store.Server, domain, tok, actor string, log LogFn) (store.Cert, error) {
 	step := func(phase string, ok bool, detail string) {
 		_ = d.Store.AddDeployEvent(s.ID, actor, phase, ok, detail)
 		if log != nil {
 			log(phase, ok, detail)
 		}
 	}
-	tok := d.cfToken(s)
 	if tok == "" {
 		return store.Cert{}, fmt.Errorf("no Cloudflare token configured")
 	}
-	if s.Domain == "" || s.CertEmail == "" {
+	if domain == "" || s.CertEmail == "" {
 		return store.Cert{}, fmt.Errorf("server needs a domain and cert email")
 	}
+	// Render nginx/cert paths against the target domain (same ports).
+	sd := s
+	sd.Domain = domain
 
 	client, err := ssh.Dial(SSHConfig(s))
 	if err != nil {
@@ -91,7 +105,7 @@ func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) 
 
 	// 2) Credentials ini at a STABLE path (not the deploy dir, which can be
 	//    renamed) so certbot's auto-renew keeps working. 0600.
-	ini := "/etc/letsencrypt/cloudflare-" + s.Domain + ".ini"
+	ini := "/etc/letsencrypt/cloudflare-" + domain + ".ini"
 	if err := client.WriteFile(ini, []byte("dns_cloudflare_api_token = "+tok+"\n"), 0o600); err != nil {
 		return store.Cert{}, err
 	}
@@ -100,7 +114,7 @@ func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) 
 	cmd := fmt.Sprintf("certbot certonly --dns-cloudflare --dns-cloudflare-credentials %s "+
 		"--dns-cloudflare-propagation-seconds 30 -d %s -d '*.%s' --cert-name %s "+
 		"--agree-tos -m %s --non-interactive --keep-until-expiring 2>&1",
-		ini, s.Domain, s.Domain, s.Domain, s.CertEmail)
+		ini, domain, domain, domain, s.CertEmail)
 	out, err := client.Run(cmd)
 	if err != nil {
 		return store.Cert{}, fmt.Errorf("run certbot: %w", err)
@@ -108,10 +122,10 @@ func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) 
 	if out.Exit != 0 {
 		return store.Cert{}, fmt.Errorf("certbot failed: %s", tail(out.Stdout+out.Stderr, 700))
 	}
-	step("certbot", true, "wildcard cert obtained for *."+s.Domain)
+	step("certbot", true, "wildcard cert obtained for *."+domain)
 
 	// 4) nginx block (base -> dashboard, wildcard -> vhost) with the cert.
-	conf, err := render("nginx-wildcard.conf.tmpl", s)
+	conf, err := render("nginx-wildcard.conf.tmpl", sd)
 	if err != nil {
 		return store.Cert{}, err
 	}
@@ -120,8 +134,8 @@ func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) 
 		[]byte("map $http_upgrade $connection_upgrade { default upgrade; '' close; }\n"), 0o644); err != nil {
 		return store.Cert{}, err
 	}
-	avail := "/etc/nginx/sites-available/" + s.Domain + ".conf"
-	enabled := "/etc/nginx/sites-enabled/" + s.Domain + ".conf"
+	avail := "/etc/nginx/sites-available/" + domain + ".conf"
+	enabled := "/etc/nginx/sites-enabled/" + domain + ".conf"
 	if err := client.WriteFile(avail, conf, 0o644); err != nil {
 		return store.Cert{}, err
 	}
@@ -134,10 +148,10 @@ func (d *Deployer) IssueCertCloudflare(s store.Server, actor string, log LogFn) 
 	if _, err := client.MustRun("systemctl reload nginx"); err != nil {
 		return store.Cert{}, err
 	}
-	step("nginx", true, "base->dashboard, *."+s.Domain+"->vhost")
+	step("nginx", true, "base->dashboard, *."+domain+"->vhost")
 
 	// 5) Record cert metadata.
-	c, err := d.refreshCertFromRemote(client, s)
+	c, err := d.refreshCertFromRemote(client, s, domain)
 	if err != nil {
 		return store.Cert{}, err
 	}
