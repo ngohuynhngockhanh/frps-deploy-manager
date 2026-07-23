@@ -44,7 +44,7 @@ func (d Deps) loginSubmit(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login?err=1", http.StatusSeeOther)
 		return
 	}
-	auth.SetSessionCookie(w, token)
+	auth.SetSessionCookie(w, r, token)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
