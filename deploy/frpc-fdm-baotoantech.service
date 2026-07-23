@@ -1,0 +1,16 @@
+# systemd --user unit for the HTTPS FRPC tunnel used by the admin UI.
+# The referenced data/frpc-baotoantech.ini is secret-bearing and gitignored.
+[Unit]
+Description=FRPC HTTPS tunnel for frps-deploy-manager
+After=network-online.target frps-deploy-manager.service
+Wants=network-online.target
+Requires=frps-deploy-manager.service
+
+[Service]
+Type=simple
+ExecStart=%h/inut-opc/runtime/frpc -c %h/maintain_6_18/data/frpc-baotoantech.ini
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

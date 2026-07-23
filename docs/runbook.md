@@ -21,6 +21,47 @@ State lives under `data/`: `app.db` (SQLite, source of truth), `master.key`
 Architecture, trust boundaries, and the RBAC matrix are documented in
 [`docs/architecture.md`](architecture.md).
 
+## Current Internet deployment
+
+The production admin UI is available at:
+
+```text
+https://fdm.baotoantech.io.vn
+```
+
+The application itself listens only on `127.0.0.1:2050`. A dedicated FRPC
+service publishes the local HTTP service as subdomain `fdm` through the
+`baotoantech` FRPS server; nginx on that server terminates the wildcard TLS
+certificate for `*.baotoantech.io.vn`.
+
+```text
+Internet HTTPS
+  -> nginx on baotoantech FRPS
+  -> FRPS vhost HTTP
+  -> frpc-fdm-baotoantech.service
+  -> 127.0.0.1:2050
+```
+
+User services:
+
+```bash
+systemctl --user status frps-deploy-manager
+systemctl --user status frpc-fdm-baotoantech
+journalctl --user -u frps-deploy-manager -f
+journalctl --user -u frpc-fdm-baotoantech -f
+```
+
+The tunnel credential is stored in the gitignored file
+`data/frpc-baotoantech.ini` with mode `0600`. Never commit this file. Install
+the reproducible service templates with:
+
+```bash
+cp deploy/frps-deploy-manager.service ~/.config/systemd/user/
+cp deploy/frpc-fdm-baotoantech.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now frps-deploy-manager frpc-fdm-baotoantech
+```
+
 ## Upgrade an existing installation
 
 ```bash
