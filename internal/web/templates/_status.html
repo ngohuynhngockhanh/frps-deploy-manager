@@ -1,0 +1,13 @@
+{{define "_status.html"}}
+{{if .Online}}
+<div class="live-grid">
+  <article><span>TRẠNG THÁI</span><b class="online-text">Online</b><small>{{.Version}}</small></article>
+  <article><span>CLIENT</span><b>{{.ClientCounts}}</b><small>đang kết nối</small></article>
+  <article><span>KẾT NỐI</span><b>{{.CurConns}}</b><small>hiện hoạt động</small></article>
+  <article><span>LƯU LƯỢNG</span><b>{{.TotalTrafficOut}}</b><small>bytes outbound</small></article>
+</div>
+<div class="proxy-strip"><span>Proxy đang ghi nhận</span>{{range $type, $count := .ProxyTypeCounts}}<span class="proxy-chip"><b>{{$type}}</b> {{$count}}</span>{{else}}<span class="muted">Chưa có proxy</span>{{end}}<span class="proxy-range">allow_ports {{.AllowPorts}}</span></div>
+{{else}}
+<div class="status-offline"><span class="server-state"></span><div><b>Chưa đọc được trạng thái trực tiếp</b><p>{{.Error}}</p></div></div>
+{{end}}
+{{end}}

@@ -39,6 +39,12 @@ func (st *Store) DeleteSession(token string) error {
 	return err
 }
 
+// DeleteSessionsForUsername invalidates every persisted login for an account.
+func (st *Store) DeleteSessionsForUsername(username string) error {
+	_, err := st.db.Exec(`DELETE FROM sessions WHERE username = ?`, username)
+	return err
+}
+
 // DeleteExpiredSessions purges sessions past their expiry.
 func (st *Store) DeleteExpiredSessions(now int64) error {
 	_, err := st.db.Exec(`DELETE FROM sessions WHERE expires_at < ?`, now)

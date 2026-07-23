@@ -19,7 +19,8 @@ type cred struct {
 // frpUserRow is a user plus its decrypted token, for display.
 type frpUserRow struct {
 	store.FrpUser
-	Token string
+	Token     string
+	CanManage bool
 }
 
 type frpUsersView struct {
@@ -71,7 +72,7 @@ func (d Deps) frpUserAdd(w http.ResponseWriter, r *http.Request) {
 		d.renderFrpUsers(w, r, s, nil, err.Error())
 		return
 	}
-	if _, err := d.Store.AddFrpUser(s.ID, username, blob); err != nil {
+	if _, err := d.Store.AddFrpUser(s.ID, username, blob, auth.CurrentUserID(r)); err != nil {
 		msg := err.Error()
 		if strings.Contains(msg, "UNIQUE") {
 			msg = "A user with that name already exists on this server."
@@ -91,6 +92,10 @@ func (d Deps) frpUserRotate(w http.ResponseWriter, r *http.Request) {
 	}
 	u, ok := d.lookupFrpUser(w, r, s)
 	if !ok {
+		return
+	}
+	if !canManageFrpUser(r, u) {
+		d.renderFrpUsers(w, r, s, nil, "Bạn chỉ được đổi token của FP user do mình tạo.")
 		return
 	}
 	token := randToken()
@@ -115,6 +120,10 @@ func (d Deps) frpUserDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	u, ok := d.lookupFrpUser(w, r, s)
 	if !ok {
+		return
+	}
+	if !canManageFrpUser(r, u) {
+		d.renderFrpUsers(w, r, s, nil, "Bạn chỉ được xóa FP user do mình tạo.")
 		return
 	}
 	if err := d.Store.DeleteFrpUser(u.ID); err != nil {
@@ -149,17 +158,24 @@ func (d Deps) renderFrpUsers(w http.ResponseWriter, r *http.Request, s store.Ser
 	rows := make([]frpUserRow, 0, len(users))
 	for _, u := range users {
 		tok := ""
-		if b, ok := blobs[u.Username]; ok {
-			if pt, err := d.Sealer.Open(b); err == nil {
-				tok = string(pt)
+		manageable := canManageFrpUser(r, u)
+		if manageable {
+			if b, ok := blobs[u.Username]; ok {
+				if pt, err := d.Sealer.Open(b); err == nil {
+					tok = string(pt)
+				}
 			}
 		}
-		rows = append(rows, frpUserRow{FrpUser: u, Token: tok})
+		rows = append(rows, frpUserRow{FrpUser: u, Token: tok, CanManage: manageable})
 	}
 	view := frpUsersView{Server: s, Users: rows, NewCred: nc, SyncErr: syncErr, CSRF: auth.CSRFToken(r)}
 	if err := d.Render.RenderPartial(w, "_frpusers.html", view); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func canManageFrpUser(r *http.Request, u store.FrpUser) bool {
+	return auth.IsAdmin(r) || (u.CreatedByID != 0 && u.CreatedByID == auth.CurrentUserID(r))
 }
 
 func (d Deps) lookupFrpUser(w http.ResponseWriter, r *http.Request, s store.Server) (store.FrpUser, bool) {

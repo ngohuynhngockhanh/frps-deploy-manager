@@ -1,5 +1,5 @@
 {{define "base"}}<!doctype html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,23 +10,52 @@
   <script src="/static/htmx.min.js" defer></script>
   <script src="/static/sse.js" defer></script>
   <script src="/static/csrf.js" defer></script>
+  <script src="/static/nav.js" defer></script>
 </head>
 <body>
   {{if .User}}
-  <header class="topbar">
-    <a class="brand" href="/"><img src="/static/logo.png" alt="iNut FRPS" class="brand-logo"></a>
-    {{if .IsAdmin}}<a class="navlink" href="/accounts">Accounts</a>{{end}}
-    <div class="spacer"></div>
-    <span class="who">{{.User}}{{if not .IsAdmin}} · manager{{end}}</span>
-    <a class="navlink" href="/change-password">Đổi MK</a>
-    <form method="post" action="/logout" class="inline">
-      <input type="hidden" name="_csrf" value="{{.CSRF}}">
-      <button class="btn ghost" type="submit">Logout</button>
-    </form>
-  </header>
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="nav-toggle" type="button" data-nav-toggle aria-label="Mở menu">☰</button>
+      <a class="brand" href="/">
+        <span class="brand-mark">F</span>
+        <span class="brand-copy"><strong>iNut FRPS</strong><small>SECURE OPERATIONS</small></span>
+      </a>
+      <div class="topbar-user">
+        <span class="who"><b>{{.User}}</b><small>{{if .IsAdmin}}Quản trị hệ thống{{else}}Quản lý site{{end}}</small></span>
+        <a class="top-link" href="/change-password">Đổi mật khẩu</a>
+        <form method="post" action="/logout" class="inline">
+          <input type="hidden" name="_csrf" value="{{.CSRF}}">
+          <button class="btn ghost light" type="submit">Đăng xuất</button>
+        </form>
+      </div>
+    </header>
+    <div class="sidebar-backdrop"></div>
+    <div class="body-row">
+      <aside class="sidebar">
+        <nav>
+          <div class="nav-group">
+            <div class="nav-title">Vận hành</div>
+            <a href="/" {{if eq .Path "/"}}class="active"{{end}}><span class="nav-ic">◫</span><span>Máy chủ FRPS</span></a>
+          </div>
+          {{if .IsAdmin}}
+          <div class="nav-group">
+            <div class="nav-title">Quản trị</div>
+            <a href="/servers/new" {{if eq .Path "/servers/new"}}class="active"{{end}}><span class="nav-ic">＋</span><span>Thêm máy chủ</span></a>
+            <a href="/accounts" {{if eq .Path "/accounts"}}class="active"{{end}}><span class="nav-ic">◎</span><span>Tài khoản site</span></a>
+          </div>
+          {{end}}
+          <div class="nav-note">
+            <span class="status-dot"></span>
+            <div><b>Private control plane</b><small>Quản trị nội bộ, có phân quyền</small></div>
+          </div>
+        </nav>
+      </aside>
+      <main class="app-content">{{template "content" .}}</main>
+    </div>
+  </div>
+  {{else}}
+  <main>{{template "content" .}}</main>
   {{end}}
-  <main class="wrap">
-    {{block "content" .}}{{end}}
-  </main>
 </body>
 </html>{{end}}

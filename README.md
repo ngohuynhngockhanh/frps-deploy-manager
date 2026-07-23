@@ -30,4 +30,5 @@ make run              # serve on http://127.0.0.1:2050  (admin / NhapHang123@)
 | `internal/web` | embedded templates + static assets |
 | `third_party/fp-multiuser` | vendored auth plugin (nested Go module) |
 
-See `docs/runbook.md` and the milestone plan for details.
+See `docs/runbook.md` for deployment/operations and `docs/architecture.md` for
+the RBAC model, NAT safety boundary, data flow, and maintenance rules.

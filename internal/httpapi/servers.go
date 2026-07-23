@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/auth"
+	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/remote"
 	"github.com/ngohuynhngockhanh/frps-deploy-manager/internal/store"
 )
 
@@ -17,6 +18,7 @@ func newServerDefaults() store.Server {
 		SSHPort: 6464, SSHUser: "root", AuthKind: "agent",
 		Project: "frps", RemoteBase: "/root/inut-jsc",
 		BindPort: 9000, DashboardPort: 9001, VhostHTTPPort: 9002, FpmuPort: 9003,
+		NatPortStart: 10000, NatPortEnd: 60000, MaxPortsPerClient: 50,
 		DashUser: "admin",
 	}
 }
@@ -178,6 +180,9 @@ func parseServerForm(r *http.Request, base store.Server) (store.Server, error) {
 	s.BindUDPPort = parseIntDefault(r.PostFormValue("bind_udp_port"), s.BindUDPPort)
 	s.VhostHTTPSPort = parseIntDefault(r.PostFormValue("vhost_https_port"), s.VhostHTTPSPort)
 	s.TCPMuxHTTPConnectPort = parseIntDefault(r.PostFormValue("tcpmux_httpconnect_port"), s.TCPMuxHTTPConnectPort)
+	s.NatPortStart = parseIntDefault(r.PostFormValue("nat_port_start"), s.NatPortStart)
+	s.NatPortEnd = parseIntDefault(r.PostFormValue("nat_port_end"), s.NatPortEnd)
+	s.MaxPortsPerClient = parseIntDefault(r.PostFormValue("max_ports_per_client"), s.MaxPortsPerClient)
 	s.TCPMux = r.PostFormValue("tcp_mux") != ""
 
 	if s.Name == "" || s.Host == "" {
@@ -201,6 +206,17 @@ func parseServerForm(r *http.Request, base store.Server) (store.Server, error) {
 	}
 	if !validEmail(s.CertEmail) {
 		return s, errors.New("Cert email không hợp lệ")
+	}
+	if s.NatPortStart < 1024 || s.NatPortEnd > 65535 || s.NatPortStart > s.NatPortEnd {
+		return s, errors.New("Dải NAT phải nằm trong 1024–65535 và cổng đầu không lớn hơn cổng cuối")
+	}
+	if s.MaxPortsPerClient < 1 || s.MaxPortsPerClient > 1000 {
+		return s, errors.New("Giới hạn NAT mỗi client phải từ 1 đến 1000")
+	}
+	for _, p := range remote.InterestingPorts(s) {
+		if p >= s.NatPortStart && p <= s.NatPortEnd {
+			return s, errors.New("Dải NAT không được chứa cổng điều khiển FRPS: " + strconv.Itoa(p))
+		}
 	}
 	return s, nil
 }

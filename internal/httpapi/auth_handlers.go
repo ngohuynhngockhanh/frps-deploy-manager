@@ -12,12 +12,13 @@ type pageData struct {
 	User    string
 	IsAdmin bool
 	CSRF    string
+	Path    string
 	Err     string
 	Data    any
 }
 
 func (d Deps) page(r *http.Request, data any) pageData {
-	return pageData{User: auth.CurrentUser(r), IsAdmin: auth.IsAdmin(r), CSRF: auth.CSRFToken(r), Data: data}
+	return pageData{User: auth.CurrentUser(r), IsAdmin: auth.IsAdmin(r), CSRF: auth.CSRFToken(r), Path: r.URL.Path, Data: data}
 }
 
 func (d Deps) loginPage(w http.ResponseWriter, r *http.Request) {

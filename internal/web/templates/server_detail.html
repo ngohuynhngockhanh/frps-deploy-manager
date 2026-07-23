@@ -1,57 +1,57 @@
-{{define "title"}}{{.Data.Name}} · frps-deploy-manager{{end}}
+{{define "title"}}{{.Data.Name}} · iNut FRPS{{end}}
 {{define "content"}}
 {{$s := .Data}}
-<div class="page-head">
-  <h1>{{$s.Name}} <span class="badge">{{$s.Status}}</span></h1>
-  {{if $.IsAdmin}}
-  <div class="actions">
-    <a class="btn ghost" href="/servers/{{$s.ID}}/edit">Edit</a>
-    <form method="post" action="/servers/{{$s.ID}}/delete" class="inline"
-          onsubmit="return confirm('Delete server {{$s.Name}}?');">
-      <input type="hidden" name="_csrf" value="{{.CSRF}}">
-      <button class="btn danger" type="submit">Delete</button>
-    </form>
+<div class="page-canvas">
+  <section class="detail-hero">
+    <div><a class="back-link" href="/">← Máy chủ</a><span class="eyebrow">SITE OPERATIONS</span><h1>{{$s.Name}}</h1><p>{{if $s.Domain}}{{$s.Domain}}{{else}}{{$s.Host}}{{end}} · NAT {{$s.NatPortStart}}–{{$s.NatPortEnd}}</p></div>
+    <div class="hero-actions"><span class="pill large {{if eq $s.Status "ready"}}success{{else}}warning{{end}}">{{$s.Status}}</span>{{if $.IsAdmin}}<a class="btn light" href="/servers/{{$s.ID}}/edit">Cấu hình</a>{{end}}</div>
+  </section>
+
+  <div class="detail-layout">
+    <div class="detail-main">
+      <section class="panel">
+        <header class="section-head"><div><span class="eyebrow">TRỰC TIẾP</span><h2>Trạng thái vận hành</h2></div><span class="live-label"><i></i>Tự làm mới</span></header>
+        <div id="live-status" hx-get="/servers/{{$s.ID}}/status" hx-trigger="load, every 30s" hx-swap="innerHTML"><div class="status-loading">Đang đọc FRPS dashboard…</div></div>
+        {{if and $.IsAdmin $s.Domain}}<div class="panel-foot"><a class="text-action" href="/dash/?server={{$s.ID}}" target="_blank" rel="noopener">Mở dashboard FRPS đầy đủ →</a></div>{{end}}
+      </section>
+
+      <section class="panel">
+        <header class="section-head"><div><span class="eyebrow">TRUY CẬP SITE</span><h2>Tài khoản FP Multiuser</h2></div><span class="muted">Manager chỉ sửa user do mình tạo</span></header>
+        <div id="frp-users" hx-get="/servers/{{$s.ID}}/frp-users" hx-trigger="load"></div>
+      </section>
+
+      <section class="panel">
+        <header class="section-head"><div><span class="eyebrow">TLS</span><h2>Chứng chỉ HTTPS</h2></div></header>
+        <div id="cert-panel" hx-get="/servers/{{$s.ID}}/certs" hx-trigger="load"></div>
+      </section>
+    </div>
+
+    <aside class="detail-side">
+      <section class="panel facts-card">
+        <span class="eyebrow">CẤU HÌNH CÔNG KHAI</span><h2>Thông số site</h2>
+        <div class="fact"><span>Domain</span><code>{{if $s.Domain}}{{$s.Domain}}{{else}}—{{end}}</code></div>
+        <div class="fact"><span>Control port</span><code>{{$s.BindPort}}</code></div>
+        <div class="fact"><span>Vhost HTTP</span><code>{{$s.VhostHTTPPort}}</code></div>
+        <div class="fact"><span>NAT TCP/UDP</span><code>{{$s.NatPortStart}}–{{$s.NatPortEnd}}</code></div>
+        <div class="fact"><span>Giới hạn/client</span><code>{{$s.MaxPortsPerClient}} port</code></div>
+        <div class="fact"><span>FRPS version</span><code>{{if $s.FrpsVersion}}{{$s.FrpsVersion}}{{else}}—{{end}}</code></div>
+      </section>
+
+      {{if $.IsAdmin}}
+      <section class="panel admin-card">
+        <span class="eyebrow">ADMIN ONLY</span><h2>Vận hành máy chủ</h2>
+        <div class="admin-fact"><span>SSH</span><code>{{$s.SSHUser}}@{{$s.Host}}:{{$s.SSHPort}}</code></div>
+        <div class="admin-fact"><span>Remote</span><code>{{$s.RemotePath}}</code></div>
+        <button class="btn full" hx-post="/servers/{{$s.ID}}/test-ssh" hx-target="#ssh-result" hx-swap="innerHTML" hx-indicator="#ssh-spin">Kiểm tra SSH &amp; port</button>
+        <span id="ssh-spin" class="htmx-indicator muted">Đang kết nối…</span><div id="ssh-result"></div>
+        <button class="btn primary full" hx-post="/servers/{{$s.ID}}/deploy" hx-target="#deploy-result" hx-swap="innerHTML" hx-indicator="#deploy-spin" hx-disabled-elt="this">Deploy FRPS</button>
+        <span id="deploy-spin" class="htmx-indicator muted">Đang build và triển khai…</span><div id="deploy-result"></div>
+        <form method="post" action="/servers/{{$s.ID}}/delete" onsubmit="return confirm('Xóa server {{$s.Name}}?');">
+          <input type="hidden" name="_csrf" value="{{.CSRF}}"><button class="btn danger ghost-danger full" type="submit">Xóa máy chủ</button>
+        </form>
+      </section>
+      {{end}}
+    </aside>
   </div>
-  {{end}}
 </div>
-
-<div class="detail-grid">
-  <div class="kv"><span>SSH</span><code>{{$s.SSHUser}}@{{$s.Host}}:{{$s.SSHPort}}</code></div>
-  <div class="kv"><span>Auth</span><code>{{$s.AuthKind}}{{if $s.KeyRef}} ({{$s.KeyRef}}){{end}}</code></div>
-  <div class="kv"><span>Remote path</span><code>{{$s.RemotePath}}</code></div>
-  <div class="kv"><span>Domain</span><code>{{if $s.Domain}}{{$s.Domain}}{{else}}—{{end}}</code></div>
-  <div class="kv"><span>Ports</span><code>bind {{$s.BindPort}} · dash {{$s.DashboardPort}} · vhost {{$s.VhostHTTPPort}} · fpmu {{$s.FpmuPort}}</code></div>
-  <div class="kv"><span>frps version</span><code>{{if $s.FrpsVersion}}{{$s.FrpsVersion}}{{else}}—{{end}}</code></div>
-</div>
-
-{{if $s.Domain}}
-<div class="op-row">
-  <a class="btn primary" href="/dash/?server={{$s.ID}}" target="_blank" rel="noopener">
-    Mở dashboard frps (không cần login)
-  </a>
-  <span class="muted">proxy trong 2050 (/dash), tự điền mật khẩu — dashboard gốc: https://{{$s.Domain}}</span>
-</div>
-{{end}}
-
-{{if $.IsAdmin}}
-<div class="op-row">
-  <button class="btn" hx-post="/servers/{{$s.ID}}/test-ssh" hx-target="#ssh-result"
-          hx-swap="innerHTML" hx-indicator="#ssh-spin">Test SSH &amp; scan ports</button>
-  <span id="ssh-spin" class="htmx-indicator muted">connecting…</span>
-</div>
-<div id="ssh-result"></div>
-
-<div class="op-row">
-  <button class="btn primary" hx-post="/servers/{{$s.ID}}/deploy" hx-target="#deploy-result"
-          hx-swap="innerHTML" hx-indicator="#deploy-spin" hx-disabled-elt="this">Deploy frps</button>
-  <span id="deploy-spin" class="htmx-indicator muted">deploying… (build → upload → systemd)</span>
-</div>
-<div id="deploy-result"></div>
-{{end}}
-
-<h2>frps users</h2>
-<div id="frp-users" hx-get="/servers/{{$s.ID}}/frp-users" hx-trigger="load"></div>
-
-<h2>HTTPS certificate</h2>
-<div id="cert-panel" hx-get="/servers/{{$s.ID}}/certs" hx-trigger="load"></div>
 {{end}}

@@ -30,12 +30,11 @@ func (d Deps) accountCreate(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
 	username := strings.TrimSpace(r.PostFormValue("username"))
 	password := r.PostFormValue("password")
-	role := r.PostFormValue("role")
-	if role != store.RoleAdmin {
-		role = store.RoleManager
-	}
-	if username == "" || password == "" {
-		d.renderAccounts(w, r, "Username and password are required.", "")
+	// The seeded root account is the only admin. All accounts created through
+	// the UI/API are site-scoped managers, regardless of submitted form data.
+	role := store.RoleManager
+	if username == "" || len(password) < 8 {
+		d.renderAccounts(w, r, "Username is required and password must be at least 8 characters.", "")
 		return
 	}
 	hash, err := crypto.HashPassword(password)
@@ -65,15 +64,33 @@ func (d Deps) accountDelete(w http.ResponseWriter, r *http.Request) {
 		d.renderAccounts(w, r, "You cannot delete your own account.", "")
 		return
 	}
-	_ = d.Store.DeleteAppUser(id)
+	u, err := d.Store.GetAppUser(id)
+	if err != nil {
+		d.renderAccounts(w, r, "Account not found.", "")
+		return
+	}
+	if u.Role == store.RoleAdmin {
+		d.renderAccounts(w, r, "The root admin account cannot be deleted.", "")
+		return
+	}
+	if err := d.Store.DeleteAppUser(id); err != nil {
+		d.renderAccounts(w, r, err.Error(), "")
+		return
+	}
+	d.Auth.InvalidateUser(u.Username)
 	d.renderAccounts(w, r, "", "Account deleted.")
 }
 
 func (d Deps) accountPassword(w http.ResponseWriter, r *http.Request) {
 	id := parseInt64(r.PathValue("id"))
+	u, err := d.Store.GetAppUser(id)
+	if err != nil {
+		d.renderAccounts(w, r, "Account not found.", "")
+		return
+	}
 	pw := r.PostFormValue("password")
-	if pw == "" {
-		d.renderAccounts(w, r, "Password cannot be empty.", "")
+	if len(pw) < 8 {
+		d.renderAccounts(w, r, "Password must be at least 8 characters.", "")
 		return
 	}
 	hash, err := crypto.HashPassword(pw)
@@ -81,7 +98,11 @@ func (d Deps) accountPassword(w http.ResponseWriter, r *http.Request) {
 		d.renderAccounts(w, r, err.Error(), "")
 		return
 	}
-	_ = d.Store.SetAppUserPassword(id, hash)
+	if err := d.Store.SetAppUserPassword(id, hash); err != nil {
+		d.renderAccounts(w, r, err.Error(), "")
+		return
+	}
+	d.Auth.InvalidateUser(u.Username)
 	d.renderAccounts(w, r, "", "Password updated.")
 }
 

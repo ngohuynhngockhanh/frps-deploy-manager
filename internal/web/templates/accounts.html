@@ -1,58 +1,45 @@
-{{define "title"}}Accounts · iNut FRPS{{end}}
+{{define "title"}}Tài khoản site · iNut FRPS{{end}}
 {{define "content"}}
-{{$csrf := .CSRF}}
-{{$servers := .Data.Servers}}
-<div class="page-head"><h1>Accounts</h1></div>
-{{if .Data.Err}}<p class="error">{{.Data.Err}}</p>{{end}}
-{{if .Data.Msg}}<p class="muted">✓ {{.Data.Msg}}</p>{{end}}
+{{$csrf := .CSRF}}{{$servers := .Data.Servers}}
+<div class="page-canvas">
+  <section class="page-hero compact"><div><span class="eyebrow">ACCESS CONTROL</span><h1>Tài khoản quản lý site</h1><p>Admin mẹ cấp quyền theo từng FRPS server. Tài khoản con không thể nâng quyền quản trị.</p></div></section>
+  {{if .Data.Err}}<div class="notice error">{{.Data.Err}}</div>{{end}}{{if .Data.Msg}}<div class="notice success">✓ {{.Data.Msg}}</div>{{end}}
 
-<table class="tbl">
-  <thead><tr><th>User</th><th>Role</th><th>Sites (manager)</th><th>Password</th><th></th></tr></thead>
-  <tbody>
-    {{range $a := .Data.Accounts}}
-    <tr>
-      <td><code>{{$a.Username}}</code></td>
-      <td>{{$a.Role}}</td>
-      <td>
-        {{if eq $a.Role "admin"}}<span class="muted">all sites</span>{{else}}
-        <form method="post" action="/accounts/{{$a.ID}}/servers" class="inline-form">
-          <input type="hidden" name="_csrf" value="{{$csrf}}">
-          {{range $s := $servers}}
-          <label class="chk"><input type="checkbox" name="servers" value="{{$s.ID}}" {{if index $a.ServerIDs $s.ID}}checked{{end}}> {{$s.Name}}</label>
+  <div class="accounts-layout">
+    <section class="panel">
+      <header class="section-head"><div><span class="eyebrow">DANH SÁCH</span><h2>Phân quyền hiện tại</h2></div></header>
+      <div class="account-list">
+        {{range $a := .Data.Accounts}}
+        <article class="account-card">
+          <div class="account-head"><span class="account-avatar">{{if eq $a.Role "admin"}}A{{else}}M{{end}}</span><div><b>{{$a.Username}}</b><small>{{if eq $a.Role "admin"}}Admin mẹ · toàn quyền{{else}}Manager · giới hạn theo site{{end}}</small></div><span class="pill {{if eq $a.Role "admin"}}admin{{else}}neutral{{end}}">{{$a.Role}}</span></div>
+          {{if eq $a.Role "admin"}}
+          <div class="root-note">Tài khoản gốc duy nhất của hệ thống. Không thể xóa hoặc hạ quyền.</div>
+          {{else}}
+          <form method="post" action="/accounts/{{$a.ID}}/servers" class="site-assignment">
+            <input type="hidden" name="_csrf" value="{{$csrf}}"><span class="form-label">Site được quản lý</span>
+            <div class="site-checks">{{range $s := $servers}}<label class="site-check"><input type="checkbox" name="servers" value="{{$s.ID}}" {{if index $a.ServerIDs $s.ID}}checked{{end}}><span><b>{{$s.Name}}</b><small>{{$s.Domain}}</small></span></label>{{else}}<span class="muted">Chưa có server.</span>{{end}}</div>
+            <button class="btn small" type="submit">Lưu phạm vi site</button>
+          </form>
+          <div class="account-actions">
+            <form method="post" action="/accounts/{{$a.ID}}/password" class="password-reset"><input type="hidden" name="_csrf" value="{{$csrf}}"><input name="password" type="password" placeholder="Mật khẩu tạm mới" minlength="8" required><button class="btn small ghost" type="submit">Đặt lại mật khẩu</button></form>
+            <form method="post" action="/accounts/{{$a.ID}}/delete" onsubmit="return confirm('Xóa tài khoản {{$a.Username}}? FP user đã tạo sẽ được chuyển về admin.');"><input type="hidden" name="_csrf" value="{{$csrf}}"><button class="btn small danger" type="submit">Xóa manager</button></form>
+          </div>
           {{end}}
-          <button class="btn ghost" type="submit">Save</button>
-        </form>
+        </article>
         {{end}}
-      </td>
-      <td>
-        <form method="post" action="/accounts/{{$a.ID}}/password" class="inline-form">
-          <input type="hidden" name="_csrf" value="{{$csrf}}">
-          <input name="password" type="password" placeholder="new password">
-          <button class="btn ghost" type="submit">Reset</button>
-        </form>
-      </td>
-      <td class="row-actions">
-        <form method="post" action="/accounts/{{$a.ID}}/delete" class="inline"
-              onsubmit="return confirm('Delete {{$a.Username}}?');">
-          <input type="hidden" name="_csrf" value="{{$csrf}}">
-          <button class="btn danger" type="submit">Delete</button>
-        </form>
-      </td>
-    </tr>
-    {{end}}
-  </tbody>
-</table>
+      </div>
+    </section>
 
-<h2>New account</h2>
-<form method="post" action="/accounts" class="inline-form">
-  <input type="hidden" name="_csrf" value="{{$csrf}}">
-  <input name="username" placeholder="username" required>
-  <input name="password" type="password" placeholder="password" required>
-  <select name="role">
-    <option value="manager">manager (assigned sites)</option>
-    <option value="admin">admin (full)</option>
-  </select>
-  <button class="btn primary" type="submit">Create</button>
-  <span class="muted">Manager: assign sites after creating (row above).</span>
-</form>
+    <aside class="panel create-account-card">
+      <span class="eyebrow">TÀI KHOẢN MỚI</span><h2>Tạo manager</h2><p class="muted">Mọi tài khoản mới luôn là manager và phải đổi mật khẩu khi đăng nhập lần đầu.</p>
+      <form method="post" action="/accounts" class="stack-form">
+        <input type="hidden" name="_csrf" value="{{$csrf}}">
+        <label><span>Username</span><input name="username" autocomplete="off" placeholder="manager-site-a" required></label>
+        <label><span>Mật khẩu tạm</span><input name="password" type="password" minlength="8" placeholder="Tối thiểu 8 ký tự" required></label>
+        <div><span class="form-label">Gán site ngay</span><div class="site-checks compact">{{range $s := $servers}}<label class="site-check"><input type="checkbox" name="servers" value="{{$s.ID}}"><span><b>{{$s.Name}}</b><small>{{$s.Domain}}</small></span></label>{{end}}</div></div>
+        <button class="btn primary full" type="submit">＋ Tạo tài khoản manager</button>
+      </form>
+    </aside>
+  </div>
+</div>
 {{end}}

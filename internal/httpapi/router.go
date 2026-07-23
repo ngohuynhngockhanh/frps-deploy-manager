@@ -54,6 +54,7 @@ func NewRouter(d Deps) http.Handler {
 	protected.HandleFunc("POST /servers/{id}/certs/cloudflare", requireAdmin(d.certIssueCloudflare))
 	// Manager-allowed on assigned sites: view + frp-user management.
 	protected.HandleFunc("GET /servers/{id}", d.serverDetail)
+	protected.HandleFunc("GET /servers/{id}/status", d.serverStatus)
 	protected.HandleFunc("GET /servers/{id}/frp-users", d.frpUsersList)
 	protected.HandleFunc("POST /servers/{id}/frp-users", d.frpUserAdd)
 	protected.HandleFunc("POST /servers/{id}/frp-users/{uid}/rotate", d.frpUserRotate)
@@ -67,8 +68,8 @@ func NewRouter(d Deps) http.Handler {
 	protected.HandleFunc("POST /accounts/{id}/servers", requireAdmin(d.accountServers))
 	// frps dashboard reverse proxy (Basic-auth injected). /api/* is the frp
 	// dashboard SPA's API namespace, unused by this admin UI.
-	protected.HandleFunc("/dash/", d.dashProxy)
-	protected.HandleFunc("/api/", d.dashProxy)
+	protected.HandleFunc("/dash/", requireAdmin(d.dashProxy))
+	protected.HandleFunc("/api/", requireAdmin(d.dashProxy))
 	mux.Handle("/", d.Auth.Middleware(protected))
 
 	return logging(mux)
@@ -96,6 +97,14 @@ type serverCard struct {
 	CertDays int
 }
 
+type indexView struct {
+	Servers       []serverCard
+	Total         int
+	Ready         int
+	CertWarnings  int
+	Unprovisioned int
+}
+
 func (d Deps) index(w http.ResponseWriter, r *http.Request) {
 	var servers []store.Server
 	var err error
@@ -109,17 +118,27 @@ func (d Deps) index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cards := make([]serverCard, 0, len(servers))
+	view := indexView{Total: len(servers)}
 	for _, s := range servers {
 		card := serverCard{Server: s}
 		if s.Domain != "" {
 			if c, err := d.Store.GetCert(s.ID, s.Domain); err == nil {
 				card.HasCert = true
 				card.CertDays = c.DaysRemaining()
+				if card.CertDays < 31 {
+					view.CertWarnings++
+				}
 			}
+		}
+		if s.Status == "ready" {
+			view.Ready++
+		} else {
+			view.Unprovisioned++
 		}
 		cards = append(cards, card)
 	}
-	if err := d.Render.Render(w, "index.html", d.page(r, cards)); err != nil {
+	view.Servers = cards
+	if err := d.Render.Render(w, "index.html", d.page(r, view)); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

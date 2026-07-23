@@ -125,6 +125,18 @@ func (m *Manager) Logout(token string) {
 	_ = m.store.DeleteSession(token)
 }
 
+// InvalidateUser removes all cached and persisted sessions for an account.
+func (m *Manager) InvalidateUser(username string) {
+	m.mu.Lock()
+	for token, s := range m.sessions {
+		if s.username == username {
+			delete(m.sessions, token)
+		}
+	}
+	m.mu.Unlock()
+	_ = m.store.DeleteSessionsForUsername(username)
+}
+
 // lookup returns the session for a token, sliding its expiry, or nil. On a
 // cold cache (e.g. after a restart) it falls back to the persisted session.
 func (m *Manager) lookup(token string) *session {

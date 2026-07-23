@@ -1,24 +1,36 @@
-{{define "title"}}Servers · frps-deploy-manager{{end}}
+{{define "title"}}Máy chủ · iNut FRPS{{end}}
 {{define "content"}}
-<div class="page-head">
-  <h1>Servers</h1>
-  {{if .IsAdmin}}<a class="btn primary" href="/servers/new">+ New server</a>{{end}}
-</div>
-{{if .Data}}
-<div class="cards">
-  {{range .Data}}
-  <a class="card" href="/servers/{{.ID}}">
-    <div class="card-title">{{.Name}}</div>
-    <div class="muted">{{.SSHUser}}@{{.Host}}:{{.SSHPort}}</div>
-    <div class="muted">{{if .Domain}}{{.Domain}}{{else}}no domain{{end}}</div>
-    <div class="card-badges">
-      <span class="badge">{{.Status}}</span>
-      {{if .HasCert}}<span class="cert-badge {{if lt .CertDays 8}}red{{else if lt .CertDays 31}}amber{{else}}green{{end}}">cert {{.CertDays}}d</span>{{end}}
+<div class="page-canvas">
+  <section class="hero">
+    <div><span class="eyebrow">FRPS CONTROL PLANE</span><h1>Hạ tầng xuyên NAT,<br>kiểm soát trong một nơi.</h1><p>Theo dõi máy chủ, chứng chỉ và tài khoản truy cập FRP theo từng site.</p></div>
+    {{if .IsAdmin}}<a class="btn hero-action" href="/servers/new">＋ Thêm máy chủ</a>{{end}}
+  </section>
+
+  <section class="metric-grid">
+    <article class="metric-card teal"><span>TỔNG MÁY CHỦ</span><b>{{.Data.Total}}</b><small>Trong phạm vi tài khoản</small></article>
+    <article class="metric-card green"><span>ĐÃ TRIỂN KHAI</span><b>{{.Data.Ready}}</b><small>Trạng thái ready</small></article>
+    <article class="metric-card amber"><span>CẦN TRIỂN KHAI</span><b>{{.Data.Unprovisioned}}</b><small>Chưa sẵn sàng hoặc cần kiểm tra</small></article>
+    <article class="metric-card coral"><span>CẢNH BÁO CERT</span><b>{{.Data.CertWarnings}}</b><small>Còn dưới 31 ngày</small></article>
+  </section>
+
+  <section class="panel server-panel">
+    <header class="section-head"><div><span class="eyebrow">HỆ THỐNG</span><h2>Danh sách FRPS server</h2></div><span class="section-count">{{.Data.Total}} site</span></header>
+    {{if .Data.Servers}}
+    <div class="server-list">
+      {{range .Data.Servers}}
+      <a class="server-row" href="/servers/{{.ID}}">
+        <span class="server-state {{if eq .Status "ready"}}online{{end}}"></span>
+        <span class="server-main"><b>{{.Name}}</b><small>{{if .Domain}}{{.Domain}}{{else}}{{.Host}}{{end}}</small></span>
+        <span class="server-meta"><small>CONTROL</small><b>:{{.BindPort}}</b></span>
+        <span class="server-meta"><small>NAT RANGE</small><b>{{.NatPortStart}}–{{.NatPortEnd}}</b></span>
+        <span class="server-badges"><span class="pill {{if eq .Status "ready"}}success{{else}}warning{{end}}">{{.Status}}</span>{{if .HasCert}}<span class="pill {{if lt .CertDays 8}}danger{{else if lt .CertDays 31}}warning{{else}}success{{end}}">cert {{.CertDays}}d</span>{{end}}</span>
+        <span class="row-arrow">→</span>
+      </a>
+      {{end}}
     </div>
-  </a>
-  {{end}}
+    {{else}}
+    <div class="empty-state"><b>Chưa có máy chủ nào</b><p>{{if .IsAdmin}}Tạo server đầu tiên để bắt đầu triển khai FRPS.{{else}}Admin chưa gán site nào cho tài khoản này.{{end}}</p></div>
+    {{end}}
+  </section>
 </div>
-{{else}}
-<p class="muted">No servers yet. Server management UI arrives in M4.</p>
-{{end}}
 {{end}}

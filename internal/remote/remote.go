@@ -22,7 +22,13 @@ func SSHConfig(s store.Server) ssh.Config {
 
 // InterestingPorts returns the frps port set to check for conflicts.
 func InterestingPorts(s store.Server) []int {
-	return []int{s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort}
+	ports := []int{s.BindPort, s.DashboardPort, s.VhostHTTPPort, s.FpmuPort}
+	for _, p := range []int{s.BindUDPPort, s.VhostHTTPSPort, s.TCPMuxHTTPConnectPort} {
+		if p != 0 {
+			ports = append(ports, p)
+		}
+	}
+	return ports
 }
 
 // PortRole labels a port with its frps role for display.
@@ -36,6 +42,12 @@ func PortRole(s store.Server, port int) string {
 		return "vhostHTTP"
 	case s.FpmuPort:
 		return "fp-multiuser"
+	case s.BindUDPPort:
+		return "bindUDP"
+	case s.VhostHTTPSPort:
+		return "vhostHTTPS"
+	case s.TCPMuxHTTPConnectPort:
+		return "tcpMux HTTP CONNECT"
 	default:
 		return "unknown"
 	}

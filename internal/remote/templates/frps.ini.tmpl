@@ -1,6 +1,8 @@
 # Managed by frps-deploy-manager — do not edit by hand.
 [common]
 bind_port = {{.BindPort}}
+allow_ports = {{.NatPortStart}}-{{.NatPortEnd}}
+max_ports_per_client = {{.MaxPortsPerClient}}
 {{if .BindUDPPort}}bind_udp_port = {{.BindUDPPort}}
 {{end}}vhost_http_port = {{.VhostHTTPPort}}
 {{if .VhostHTTPSPort}}vhost_https_port = {{.VhostHTTPSPort}}

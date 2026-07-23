@@ -1,7 +1,7 @@
 {{define "title"}}{{if .Data.IsNew}}New server{{else}}Edit server{{end}} · frps-deploy-manager{{end}}
 {{define "content"}}
 {{$s := .Data.Server}}
-<div class="page-head">
+<div class="page-canvas"><div class="page-head">
   <h1>{{if .Data.IsNew}}New server{{else}}Edit {{$s.Name}}{{end}}</h1>
   <a class="btn ghost" href="{{if .Data.IsNew}}/{{else}}/servers/{{$s.ID}}{{end}}">Cancel</a>
 </div>
@@ -47,6 +47,9 @@
       <label>dashboard <input name="dashboard_port" type="number" value="{{$s.DashboardPort}}"></label>
       <label>vhostHTTP <input name="vhost_http_port" type="number" value="{{$s.VhostHTTPPort}}"></label>
       <label>fp-multiuser <input name="fpmu_port" type="number" value="{{$s.FpmuPort}}"></label>
+      <label>NAT port bắt đầu <input name="nat_port_start" type="number" min="1024" max="65535" value="{{$s.NatPortStart}}"></label>
+      <label>NAT port kết thúc <input name="nat_port_end" type="number" min="1024" max="65535" value="{{$s.NatPortEnd}}"></label>
+      <label>Giới hạn port mỗi client <input name="max_ports_per_client" type="number" min="1" max="1000" value="{{$s.MaxPortsPerClient}}"></label>
       <label>dashboard user <input name="dash_user" value="{{$s.DashUser}}"></label>
       <label>dashboard password <input name="dash_password" type="password" placeholder="{{if .Data.IsNew}}auto-generate if blank{{else}}unchanged if blank{{end}}"></label>
     </div>
@@ -63,5 +66,5 @@
   </fieldset>
 
   <button class="btn primary" type="submit">{{if .Data.IsNew}}Create{{else}}Save{{end}}</button>
-</form>
+</form></div>
 {{end}}

@@ -1,28 +1,22 @@
 {{define "_frpusers.html"}}
-{{$sid := .Server.ID}}
+{{$sid := .Server.ID}}{{$addr := .ServerAddr}}{{$port := .Server.BindPort}}
 <div class="frp-users">
   {{if .NewCred}}
-    <div class="cred-notice">
-      <strong>New credential — copy it now (not shown again):</strong>
-      <div class="kv"><span>user</span><code>{{.NewCred.Username}}</code></div>
-      <div class="kv"><span>token</span><code>{{.NewCred.Token}}</code></div>
-      <div class="muted">frpc: <code>serverPort={{.Server.BindPort}}, user={{.NewCred.Username}}, metadatas.token={{.NewCred.Token}}</code></div>
-    </div>
+  <div class="credential-banner"><span class="cred-icon">✓</span><div><strong>Thông tin vừa tạo — hãy lưu lại ngay</strong><p>User <code>{{.NewCred.Username}}</code> · Token <code>{{.NewCred.Token}}</code></p><small>serverPort={{.Server.BindPort}}, user={{.NewCred.Username}}, metadatas.token={{.NewCred.Token}}</small></div></div>
   {{end}}
-  {{if .SyncErr}}<p class="muted">{{.SyncErr}}</p>{{end}}
+  {{if .SyncErr}}<div class="notice warning">{{.SyncErr}}</div>{{end}}
 
-  {{$addr := .ServerAddr}}{{$port := .Server.BindPort}}
-  <table class="tbl">
-    <thead><tr><th>User</th><th>Token</th><th>frpc</th><th></th></tr></thead>
-    <tbody>
-      {{range .Users}}
-      <tr>
-        <td><code>{{.Username}}</code></td>
-        <td><code class="tok">{{.Token}}</code></td>
-        <td>
-          <details class="frpc">
-            <summary class="btn ghost">config</summary>
-<pre class="frpc-cfg">[common]
+  <div class="table-wrap">
+    <table class="tbl user-table">
+      <thead><tr><th>Tài khoản</th><th>Chủ sở hữu</th><th>Token</th><th>Cấu hình</th><th></th></tr></thead>
+      <tbody>
+        {{range .Users}}
+        <tr>
+          <td data-label="Tài khoản"><span class="user-name"><i></i><code>{{.Username}}</code></span></td>
+          <td data-label="Chủ sở hữu"><span class="owner-label">{{if .CreatorName}}{{.CreatorName}}{{else}}Admin / hệ thống{{end}}</span></td>
+          <td data-label="Token">{{if .CanManage}}<code class="tok">{{.Token}}</code>{{else}}<span class="masked-token">••••••••••••</span>{{end}}</td>
+          <td data-label="Cấu hình">
+            {{if .CanManage}}<details class="frpc"><summary class="text-action">Xem frpc</summary><pre class="frpc-cfg">[common]
 server_addr = {{$addr}}
 server_port = {{$port}}
 user = {{.Username}}
@@ -32,28 +26,22 @@ meta_token = {{.Token}}
 type = http
 local_ip = 127.0.0.1
 local_port = 8080
-subdomain = {{.Username}}</pre>
-          </details>
-        </td>
-        <td class="row-actions">
-          <button class="btn ghost" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/rotate"
-                  hx-target="#frp-users" hx-swap="innerHTML">Rotate</button>
-          <button class="btn danger" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/delete"
-                  hx-target="#frp-users" hx-swap="innerHTML"
-                  hx-confirm="Delete user {{.Username}}?">Delete</button>
-        </td>
-      </tr>
-      {{else}}
-      <tr><td colspan="4" class="muted">No frp users yet.</td></tr>
-      {{end}}
-    </tbody>
-  </table>
+subdomain = {{.Username}}</pre></details>{{else}}<span class="muted">Chỉ đọc</span>{{end}}
+          </td>
+          <td class="row-actions">
+            {{if .CanManage}}<button class="btn small ghost" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/rotate" hx-target="#frp-users" hx-swap="innerHTML">Đổi token</button><button class="btn small danger" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/delete" hx-target="#frp-users" hx-swap="innerHTML" hx-confirm="Xóa user {{.Username}}?">Xóa</button>{{else}}<span class="lock-label">Được bảo vệ</span>{{end}}
+          </td>
+        </tr>
+        {{else}}<tr><td colspan="5"><div class="empty-inline">Chưa có FP user trên site này.</div></td></tr>{{end}}
+      </tbody>
+    </table>
+  </div>
 
-  <form hx-post="/servers/{{$sid}}/frp-users" hx-target="#frp-users" hx-swap="innerHTML" class="inline-form">
+  <form hx-post="/servers/{{$sid}}/frp-users" hx-target="#frp-users" hx-swap="innerHTML" class="create-user-form">
     <input type="hidden" name="_csrf" value="{{.CSRF}}">
-    <input name="username" placeholder="username" required>
-    <input name="token" placeholder="token (blank = auto-generate)">
-    <button class="btn primary" type="submit">Add user</button>
+    <label><span>Username mới</span><input name="username" placeholder="site-camera-01" required></label>
+    <label><span>Token</span><input name="token" placeholder="Để trống để tự sinh an toàn"></label>
+    <button class="btn primary" type="submit">＋ Tạo FP user</button>
   </form>
 </div>
 {{end}}

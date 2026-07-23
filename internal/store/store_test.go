@@ -94,3 +94,55 @@ func TestMigrationsIdempotent(t *testing.T) {
 	}
 	st2.Close()
 }
+
+func TestSingleAdminAndFrpUserOwnership(t *testing.T) {
+	st := testStore(t)
+	admin, err := st.CreateAppUser("root", "hash", RoleAdmin, false)
+	if err != nil {
+		t.Fatalf("create admin: %v", err)
+	}
+	if _, err := st.CreateAppUser("second-root", "hash", RoleAdmin, false); err == nil {
+		t.Fatal("expected the single-admin index to reject a second admin")
+	}
+	manager, err := st.CreateAppUser("site-manager", "hash", RoleManager, false)
+	if err != nil {
+		t.Fatalf("create manager: %v", err)
+	}
+	s, err := st.CreateServer(sampleServer())
+	if err != nil {
+		t.Fatalf("create server: %v", err)
+	}
+	u, err := st.AddFrpUser(s.ID, "camera", []byte("sealed"), manager.ID)
+	if err != nil {
+		t.Fatalf("add frp user: %v", err)
+	}
+	got, err := st.GetFrpUser(u.ID)
+	if err != nil || got.CreatedByID != manager.ID || got.CreatorName != manager.Username {
+		t.Fatalf("unexpected owner: %+v err=%v", got, err)
+	}
+	if err := st.DeleteAppUser(manager.ID); err != nil {
+		t.Fatalf("delete manager: %v", err)
+	}
+	got, err = st.GetFrpUser(u.ID)
+	if err != nil || got.CreatedByID != 0 || got.CreatorName != "" {
+		t.Fatalf("deleted manager should leave an admin-owned FRP user: %+v err=%v", got, err)
+	}
+	if admin.ID == 0 {
+		t.Fatal("expected root admin id")
+	}
+}
+
+func TestServerNATDefaults(t *testing.T) {
+	st := testStore(t)
+	s, err := st.CreateServer(sampleServer())
+	if err != nil {
+		t.Fatalf("create server: %v", err)
+	}
+	got, err := st.GetServer(s.ID)
+	if err != nil {
+		t.Fatalf("get server: %v", err)
+	}
+	if got.NatPortStart != 10000 || got.NatPortEnd != 60000 || got.MaxPortsPerClient != 50 {
+		t.Fatalf("unexpected NAT defaults: %+v", got)
+	}
+}

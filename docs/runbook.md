@@ -18,6 +18,36 @@ State lives under `data/`: `app.db` (SQLite, source of truth), `master.key`
 (AES key for sealed tokens, mode 0600), `build-cache/` (cross-compiled binaries),
 `known_hosts`. Back up `data/` to preserve servers, users and the master key.
 
+Architecture, trust boundaries, and the RBAC matrix are documented in
+[`docs/architecture.md`](architecture.md).
+
+## Upgrade an existing installation
+
+```bash
+git pull --ff-only
+make test
+make build
+sudo systemctl restart frps-deploy-manager
+sudo systemctl status --no-pager frps-deploy-manager
+```
+
+Database migrations run automatically when the manager starts. Back up
+`data/` before upgrading. After the NAT safety migration, open each existing
+server, verify the default range `10000-60000` and limit `50`, then redeploy the
+server so `allow_ports` and `max_ports_per_client` reach remote `frps.ini`.
+
+## Account operations
+
+- The oldest/root admin is the single full administrator.
+- Every account created in **Tài khoản site** is a manager, regardless of form
+  manipulation, and must change its temporary password on first login.
+- Assign one or more sites to each manager. Removing an assignment takes effect
+  on the next request.
+- Managers can create FP users on assigned sites, but can only see tokens and
+  rotate/delete users they created themselves.
+- Deleting a manager preserves their FP users and transfers effective control
+  to the root admin.
+
 ## Deploy a server (UI flow)
 
 1. **New server** → host, SSH port, domain, cert email. SSH auth defaults to
@@ -50,6 +80,11 @@ own frps unit.
 | 9001 | frps dashboard (`webServer`, 127.0.0.1; nginx :443 proxies here) |
 | 9002 | frps `vhostHTTPPort` |
 | 9003 | fp-multiuser plugin (127.0.0.1, internal) |
+| 10000–60000 | Default shared TCP/UDP NAT range (`allow_ports`) |
+
+Each FRPC client is limited to 50 remote ports by default. Both values are
+editable per server. The NAT range must not overlap control/dashboard/vhost or
+plugin ports.
 
 ## Troubleshooting
 
@@ -116,5 +151,5 @@ frps `vhostHTTPPort` (9002), and set `subDomainHost = "io.vnmap3d.com"` in
 
 - Deploy currently runs synchronously (~45s); a job + SSE live-log stream is a
   planned enhancement (M11 in the plan).
-- Dashboard password is stored plaintext in `servers.dash_password` (it is also
-  written to the remote `frps.toml`); consider sealing it at rest.
+- The shared NAT range prevents out-of-range use and active collisions, but it
+  does not reserve a released port permanently for one FP user.
