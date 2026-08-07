@@ -21,6 +21,9 @@ State lives under `data/`: `app.db` (SQLite, source of truth), `master.key`
 Architecture, trust boundaries, and the RBAC matrix are documented in
 [`docs/architecture.md`](architecture.md).
 
+The repeatable VPN-to-public deployment procedure is captured in the project
+skill [`skills/deploy-frps-over-vpn/SKILL.md`](../skills/deploy-frps-over-vpn/SKILL.md).
+
 ## Current Internet deployment
 
 The production admin UI is available at:
@@ -157,6 +160,23 @@ On the server detail page → HTTPS certificate → Cloudflare box:
 
 Example verified live: `a.vnmap3d.io.vn` (dashboard) + `*.a.vnmap3d.io.vn`
 (frpc tunnels), single wildcard cert, auto-renew.
+
+### VPN management address versus Floating IP
+
+When a VPS has a VPN address and an OpenStack Floating IP, use the VPN address
+only for SSH/management and point public DNS at the Floating IP. For the
+reference `a.inut.io.vn` deployment:
+
+```text
+VPN/SSH:       77.88.208.17
+Public DNS A:  103.226.248.95
+```
+
+Both `a.inut.io.vn` and `*.a.inut.io.vn` must remain DNS-only (grey cloud) so
+FRPS control and tunnel ports can reach the VPS. If the records resolve but
+public ports time out while nginx/FRPS listen and guest firewalls allow them,
+check the OpenStack Floating IP association and security group instead of
+adding the Floating IP to the guest interface.
 
 ## frps config format
 

@@ -32,3 +32,5 @@ make run              # serve on http://127.0.0.1:2050  (admin / NhapHang123@)
 
 See `docs/runbook.md` for deployment/operations and `docs/architecture.md` for
 the RBAC model, NAT safety boundary, data flow, and maintenance rules.
+The VPN-to-public Floating IP workflow is documented in
+`skills/deploy-frps-over-vpn/SKILL.md`.
