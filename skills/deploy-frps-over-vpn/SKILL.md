@@ -30,6 +30,19 @@ Server `#4` (`inut-a-frp`) is the reference deployment:
 - fp-multiuser: `127.0.0.1:7201`.
 - NAT policy: `10000-60000`, maximum `50` ports per client.
 
+The same VPS also hosts server `#5` (`a-vnmap-ai-frp`) without sharing the
+first instance's control ports:
+
+- Domain: `a.vnmap.ai`; Cloudflare zone: `vnmap.ai`.
+- Project: `/root/a-vnmap-ai-frp`.
+- FRPS `bindPort`: `7010`; dashboard: `127.0.0.1:7510`.
+- Vhost HTTP: `8090`; fp-multiuser: `127.0.0.1:7210`.
+- NAT policy: `10000-60000`, maximum `50` ports per client.
+
+Every additional FRPS instance on one VPS needs its own control, dashboard,
+vhost, and plugin ports. Never reuse `7008/7508/8098/7201` from the first
+instance.
+
 Do not copy dashboard passwords, FRP tokens, Cloudflare tokens, private keys,
 or session cookies into this skill or Git.
 
@@ -92,6 +105,9 @@ a.inut.io.vn       A 103.226.248.95
 DNS-only is required for FRPS control and non-HTTP tunnel ports. The manager's
 **Point DNS -> VPS** action derives an address from `api.ipify.org`; review its
 result and correct the records if it reports a VPN or wrong NAT address.
+If the manager host has no IPv6 route and the Cloudflare API resolves to IPv6,
+the action can report `network is unreachable`; use an IPv4-capable API client
+for the same DNS-only upsert, then continue with certificate issuance.
 
 ```bash
 dig +short A a.inut.io.vn @8.8.8.8
