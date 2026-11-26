@@ -2,14 +2,14 @@
 {{define "content"}}
 <div class="page-canvas">
   <section class="hero">
-    <div><span class="eyebrow">FRPS CONTROL PLANE</span><h1>Hạ tầng xuyên NAT,<br>kiểm soát trong một nơi.</h1><p>Theo dõi máy chủ, chứng chỉ và tài khoản truy cập FRP theo từng site.</p></div>
-    {{if .IsAdmin}}<a class="btn hero-action" href="/servers/new">＋ Thêm máy chủ</a>{{end}}
+    <div class="hero-copy"><span class="eyebrow">FRPS CONTROL PLANE</span><h1>Hạ tầng xuyên NAT,<br>kiểm soát trong một nơi.</h1><p>Theo dõi máy chủ, chứng chỉ và tài khoản truy cập FRP theo từng site.</p></div>
+    {{if .IsAdmin}}<a class="btn hero-action" href="/servers/new"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Thêm máy chủ</span></a>{{end}}
   </section>
 
   <section class="metric-grid">
     <article class="metric-card teal"><span>TỔNG MÁY CHỦ</span><b>{{.Data.Total}}</b><small>Trong phạm vi tài khoản</small></article>
     <article class="metric-card green"><span>ĐÃ TRIỂN KHAI</span><b>{{.Data.Ready}}</b><small>Trạng thái ready</small></article>
-    <article class="metric-card amber"><span>CẦN TRIỂN KHAI</span><b>{{.Data.Unprovisioned}}</b><small>Chưa sẵn sàng hoặc cần kiểm tra</small></article>
+    <article class="metric-card amber"><span>CẦN TRIỂN KHAI</span><b>{{.Data.Unprovisioned}}</b><small>Chưa sẵn sàng / cần kiểm</small></article>
     <article class="metric-card coral"><span>CẢNH BÁO CERT</span><b>{{.Data.CertWarnings}}</b><small>Còn dưới 31 ngày</small></article>
   </section>
 
@@ -21,10 +21,10 @@
       <a class="server-row" href="/servers/{{.ID}}">
         <span class="server-state {{if eq .Status "ready"}}online{{end}}"></span>
         <span class="server-main"><b>{{.Name}}</b><small>{{if .Domain}}{{.Domain}}{{else}}{{.Host}}{{end}}</small></span>
-        <span class="server-meta"><small>CONTROL</small><b>:{{.BindPort}}</b></span>
-        <span class="server-meta"><small>NAT RANGE</small><b>{{.NatPortStart}}–{{.NatPortEnd}}</b></span>
+        <span class="server-meta server-meta-ctrl"><small>CONTROL</small><b>:{{.BindPort}}</b></span>
+        <span class="server-meta server-meta-nat"><small>NAT RANGE</small><b>{{.NatPortStart}}–{{.NatPortEnd}}</b></span>
         <span class="server-badges"><span class="pill {{if eq .Status "ready"}}success{{else}}warning{{end}}">{{.Status}}</span>{{if .HasCert}}<span class="pill {{if lt .CertDays 8}}danger{{else if lt .CertDays 31}}warning{{else}}success{{end}}">cert {{.CertDays}}d</span>{{end}}</span>
-        <span class="row-arrow">→</span>
+        <span class="row-arrow" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
       </a>
       {{end}}
     </div>

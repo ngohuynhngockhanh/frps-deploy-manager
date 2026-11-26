@@ -23,6 +23,28 @@ type serverLiveStatus struct {
 	AllowPorts      string
 }
 
+func (s serverLiveStatus) TrafficOutHuman() string {
+	return formatBytes(s.TotalTrafficOut)
+}
+
+func formatBytes(b int64) string {
+	if b < 1024 {
+		return fmt.Sprintf("%d B", b)
+	}
+	units := []string{"KB", "MB", "GB", "TB"}
+	val := float64(b)
+	for _, u := range units {
+		val /= 1024
+		if val < 1024 || u == units[len(units)-1] {
+			if val >= 100 {
+				return fmt.Sprintf("%.0f %s", val, u)
+			}
+			return fmt.Sprintf("%.1f %s", val, u)
+		}
+	}
+	return fmt.Sprintf("%d B", b)
+}
+
 func (d Deps) serverStatus(w http.ResponseWriter, r *http.Request) {
 	s, ok := d.lookupServer(w, r)
 	if !ok {

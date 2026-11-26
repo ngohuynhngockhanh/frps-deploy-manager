@@ -3,7 +3,7 @@
 {{$s := .Data}}
 <div class="page-canvas">
   <section class="detail-hero">
-    <div><a class="back-link" href="/">← Máy chủ</a><span class="eyebrow">SITE OPERATIONS</span><h1>{{$s.Name}}</h1><p>{{if $s.Domain}}{{$s.Domain}}{{else}}{{$s.Host}}{{end}} · NAT {{$s.NatPortStart}}–{{$s.NatPortEnd}}</p></div>
+    <div class="hero-copy"><a class="back-link" href="/">← Máy chủ</a><span class="eyebrow">SITE OPERATIONS</span><h1>{{$s.Name}}</h1><p>{{if $s.Domain}}{{$s.Domain}}{{else}}{{$s.Host}}{{end}} · NAT {{$s.NatPortStart}}–{{$s.NatPortEnd}}</p></div>
     <div class="hero-actions"><span class="pill large {{if eq $s.Status "ready"}}success{{else}}warning{{end}}">{{$s.Status}}</span>{{if $.IsAdmin}}<a class="btn light" href="/servers/{{$s.ID}}/edit">Cấu hình</a>{{end}}</div>
   </section>
 
@@ -16,7 +16,7 @@
       </section>
 
       <section class="panel">
-        <header class="section-head"><div><span class="eyebrow">TRUY CẬP SITE</span><h2>Tài khoản FP Multiuser</h2></div><span class="muted">Manager chỉ sửa user do mình tạo</span></header>
+        <header class="section-head section-head-stack"><div><span class="eyebrow">TRUY CẬP SITE</span><h2>Tài khoản FP Multiuser</h2></div><span class="muted">Manager chỉ sửa user do mình tạo</span></header>
         <div id="frp-users" hx-get="/servers/{{$s.ID}}/frp-users" hx-trigger="load"></div>
       </section>
 
@@ -30,6 +30,7 @@
       <section class="panel facts-card">
         <span class="eyebrow">CẤU HÌNH CÔNG KHAI</span><h2>Thông số site</h2>
         <div class="fact"><span>Domain</span><code>{{if $s.Domain}}{{$s.Domain}}{{else}}—{{end}}</code></div>
+        {{if $s.Domain2}}<div class="fact"><span>Domain phụ</span><code>{{$s.Domain2}}</code></div>{{end}}
         <div class="fact"><span>Control port</span><code>{{$s.BindPort}}</code></div>
         <div class="fact"><span>Vhost HTTP</span><code>{{$s.VhostHTTPPort}}</code></div>
         <div class="fact"><span>NAT TCP/UDP</span><code>{{$s.NatPortStart}}–{{$s.NatPortEnd}}</code></div>
@@ -42,13 +43,15 @@
         <span class="eyebrow">ADMIN ONLY</span><h2>Vận hành máy chủ</h2>
         <div class="admin-fact"><span>SSH</span><code>{{$s.SSHUser}}@{{$s.Host}}:{{$s.SSHPort}}</code></div>
         <div class="admin-fact"><span>Remote</span><code>{{$s.RemotePath}}</code></div>
-        <button class="btn full" hx-post="/servers/{{$s.ID}}/test-ssh" hx-target="#ssh-result" hx-swap="innerHTML" hx-indicator="#ssh-spin">Kiểm tra SSH &amp; port</button>
-        <span id="ssh-spin" class="htmx-indicator muted">Đang kết nối…</span><div id="ssh-result"></div>
-        <button class="btn primary full" hx-post="/servers/{{$s.ID}}/deploy" hx-target="#deploy-result" hx-swap="innerHTML" hx-indicator="#deploy-spin" hx-disabled-elt="this">Deploy FRPS</button>
-        <span id="deploy-spin" class="htmx-indicator muted">Đang build và triển khai…</span><div id="deploy-result"></div>
-        <form method="post" action="/servers/{{$s.ID}}/delete" onsubmit="return confirm('Xóa server {{$s.Name}}?');">
-          <input type="hidden" name="_csrf" value="{{.CSRF}}"><button class="btn danger ghost-danger full" type="submit">Xóa máy chủ</button>
-        </form>
+        <div class="admin-ops">
+          <button class="btn full" hx-post="/servers/{{$s.ID}}/test-ssh" hx-target="#ssh-result" hx-swap="innerHTML" hx-indicator="#ssh-spin">Kiểm tra SSH &amp; port</button>
+          <span id="ssh-spin" class="htmx-indicator muted">Đang kết nối…</span><div id="ssh-result"></div>
+          <button class="btn primary full" hx-post="/servers/{{$s.ID}}/deploy" hx-target="#deploy-result" hx-swap="innerHTML" hx-indicator="#deploy-spin" hx-disabled-elt="this">Deploy FRPS</button>
+          <span id="deploy-spin" class="htmx-indicator muted">Đang build và triển khai…</span><div id="deploy-result"></div>
+          <form method="post" action="/servers/{{$s.ID}}/delete" onsubmit="return confirm('Xóa server {{$s.Name}}?');">
+            <input type="hidden" name="_csrf" value="{{.CSRF}}"><button class="btn danger ghost-danger full" type="submit">Xóa máy chủ</button>
+          </form>
+        </div>
       </section>
       {{end}}
     </aside>

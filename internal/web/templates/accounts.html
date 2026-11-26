@@ -2,27 +2,27 @@
 {{define "content"}}
 {{$csrf := .CSRF}}{{$servers := .Data.Servers}}
 <div class="page-canvas">
-  <section class="page-hero compact"><div><span class="eyebrow">ACCESS CONTROL</span><h1>Tài khoản quản lý site</h1><p>Admin mẹ cấp quyền theo từng FRPS server. Tài khoản con không thể nâng quyền quản trị.</p></div></section>
+  <section class="page-hero compact"><div class="hero-copy"><span class="eyebrow">ACCESS CONTROL</span><h1>Tài khoản quản lý site</h1><p>Admin mẹ cấp quyền theo từng FRPS server. Tài khoản con không thể nâng quyền quản trị.</p></div></section>
   {{if .Data.Err}}<div class="notice error">{{.Data.Err}}</div>{{end}}{{if .Data.Msg}}<div class="notice success">✓ {{.Data.Msg}}</div>{{end}}
 
   <div class="accounts-layout">
     <section class="panel">
-      <header class="section-head"><div><span class="eyebrow">DANH SÁCH</span><h2>Phân quyền hiện tại</h2></div></header>
+      <header class="section-head"><div><span class="eyebrow">DANH SÁCH</span><h2>Phân quyền hiện tại</h2></div><span class="section-count">{{len .Data.Accounts}} tài khoản</span></header>
       <div class="account-list">
         {{range $a := .Data.Accounts}}
         <article class="account-card">
-          <div class="account-head"><span class="account-avatar">{{if eq $a.Role "admin"}}A{{else}}M{{end}}</span><div><b>{{$a.Username}}</b><small>{{if eq $a.Role "admin"}}Admin mẹ · toàn quyền{{else}}Manager · giới hạn theo site{{end}}</small></div><span class="pill {{if eq $a.Role "admin"}}admin{{else}}neutral{{end}}">{{$a.Role}}</span></div>
+          <div class="account-head"><span class="account-avatar">{{if eq $a.Role "admin"}}A{{else}}M{{end}}</span><div class="account-meta"><b>{{$a.Username}}</b><small>{{if eq $a.Role "admin"}}Admin mẹ · toàn quyền{{else}}Manager · giới hạn theo site{{end}}</small></div><span class="pill {{if eq $a.Role "admin"}}admin{{else}}neutral{{end}}">{{$a.Role}}</span></div>
           {{if eq $a.Role "admin"}}
           <div class="root-note">Tài khoản gốc duy nhất của hệ thống. Không thể xóa hoặc hạ quyền.</div>
           {{else}}
           <form method="post" action="/accounts/{{$a.ID}}/servers" class="site-assignment">
             <input type="hidden" name="_csrf" value="{{$csrf}}"><span class="form-label">Site được quản lý</span>
-            <div class="site-checks">{{range $s := $servers}}<label class="site-check"><input type="checkbox" name="servers" value="{{$s.ID}}" {{if index $a.ServerIDs $s.ID}}checked{{end}}><span><b>{{$s.Name}}</b><small>{{$s.Domain}}</small></span></label>{{else}}<span class="muted">Chưa có server.</span>{{end}}</div>
-            <button class="btn small" type="submit">Lưu phạm vi site</button>
+            <div class="site-checks">{{range $s := $servers}}<label class="site-check"><input type="checkbox" name="servers" value="{{$s.ID}}" {{if index $a.ServerIDs $s.ID}}checked{{end}}><span><b>{{$s.Name}}</b><small>{{if $s.Domain}}{{$s.Domain}}{{else}}{{$s.Host}}{{end}}</small></span></label>{{else}}<span class="muted">Chưa có server.</span>{{end}}</div>
+            <button class="btn small save-sites-btn" type="submit">Lưu phạm vi site</button>
           </form>
           <div class="account-actions">
-            <form method="post" action="/accounts/{{$a.ID}}/password" class="password-reset"><input type="hidden" name="_csrf" value="{{$csrf}}"><input name="password" type="password" placeholder="Mật khẩu tạm mới" minlength="8" required><button class="btn small ghost" type="submit">Đặt lại mật khẩu</button></form>
-            <form method="post" action="/accounts/{{$a.ID}}/delete" onsubmit="return confirm('Xóa tài khoản {{$a.Username}}? FP user đã tạo sẽ được chuyển về admin.');"><input type="hidden" name="_csrf" value="{{$csrf}}"><button class="btn small danger" type="submit">Xóa manager</button></form>
+            <form method="post" action="/accounts/{{$a.ID}}/password" class="password-reset"><input type="hidden" name="_csrf" value="{{$csrf}}"><input name="password" type="password" placeholder="Mật khẩu tạm mới (≥ 8 ký tự)" minlength="8" required><button class="btn small ghost" type="submit">Đặt lại mật khẩu</button></form>
+            <form method="post" action="/accounts/{{$a.ID}}/delete" class="delete-account-form" onsubmit="return confirm('Xóa tài khoản {{$a.Username}}? FP user đã tạo sẽ được chuyển về admin.');"><input type="hidden" name="_csrf" value="{{$csrf}}"><button class="btn small danger" type="submit">Xóa manager</button></form>
           </div>
           {{end}}
         </article>
@@ -36,8 +36,8 @@
         <input type="hidden" name="_csrf" value="{{$csrf}}">
         <label><span>Username</span><input name="username" autocomplete="off" placeholder="manager-site-a" required></label>
         <label><span>Mật khẩu tạm</span><input name="password" type="password" minlength="8" placeholder="Tối thiểu 8 ký tự" required></label>
-        <div><span class="form-label">Gán site ngay</span><div class="site-checks compact">{{range $s := $servers}}<label class="site-check"><input type="checkbox" name="servers" value="{{$s.ID}}"><span><b>{{$s.Name}}</b><small>{{$s.Domain}}</small></span></label>{{end}}</div></div>
-        <button class="btn primary full" type="submit">＋ Tạo tài khoản manager</button>
+        <div><span class="form-label">Gán site ngay</span><div class="site-checks compact">{{range $s := $servers}}<label class="site-check"><input type="checkbox" name="servers" value="{{$s.ID}}"><span><b>{{$s.Name}}</b><small>{{if $s.Domain}}{{$s.Domain}}{{else}}{{$s.Host}}{{end}}</small></span></label>{{end}}</div></div>
+        <button class="btn primary full" type="submit"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Tạo tài khoản manager</span></button>
       </form>
     </aside>
   </div>

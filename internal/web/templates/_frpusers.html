@@ -2,7 +2,7 @@
 {{$sid := .Server.ID}}{{$addr := .ServerAddr}}{{$port := .Server.BindPort}}
 <div class="frp-users">
   {{if .NewCred}}
-  <div class="credential-banner"><span class="cred-icon">✓</span><div><strong>Thông tin vừa tạo — hãy lưu lại ngay</strong><p>User <code>{{.NewCred.Username}}</code> · Token <code>{{.NewCred.Token}}</code></p><small>serverPort={{.Server.BindPort}}, user={{.NewCred.Username}}, metadatas.token={{.NewCred.Token}}</small></div></div>
+  <div class="credential-banner"><span class="cred-icon">✓</span><div class="cred-body"><strong>Thông tin vừa tạo — hãy lưu lại ngay</strong><p>User <code>{{.NewCred.Username}}</code> · Token <code>{{.NewCred.Token}}</code></p><small>serverPort={{.Server.BindPort}}, user={{.NewCred.Username}}, metadatas.token={{.NewCred.Token}}</small></div></div>
   {{end}}
   {{if .SyncErr}}<div class="notice warning">{{.SyncErr}}</div>{{end}}
 
@@ -12,11 +12,11 @@
       <tbody>
         {{range .Users}}
         <tr>
-          <td data-label="Tài khoản"><span class="user-name"><i></i><code>{{.Username}}</code></span></td>
-          <td data-label="Chủ sở hữu"><span class="owner-label">{{if .CreatorName}}{{.CreatorName}}{{else}}Admin / hệ thống{{end}}</span></td>
-          <td data-label="Token">{{if .CanManage}}<code class="tok">{{.Token}}</code>{{else}}<span class="masked-token">••••••••••••</span>{{end}}</td>
-          <td data-label="Cấu hình">
-            {{if .CanManage}}<details class="frpc"><summary class="text-action">Xem frpc</summary><pre class="frpc-cfg">[common]
+          <td class="cell-user" data-label="Tài khoản"><span class="user-name"><i></i><code>{{.Username}}</code></span></td>
+          <td class="cell-owner" data-label="Chủ sở hữu"><span class="owner-label">{{if .CreatorName}}{{.CreatorName}}{{else}}Admin / hệ thống{{end}}</span></td>
+          <td class="cell-token" data-label="Token">{{if .CanManage}}<div class="tok-row"><code class="tok">{{.Token}}</code><button class="copy-btn" type="button" data-copy="{{.Token}}" aria-label="Sao chép token">Copy</button></div>{{else}}<span class="masked-token">••••••••••••</span>{{end}}</td>
+          <td class="cell-cfg" data-label="Cấu hình">
+            {{if .CanManage}}<details class="frpc"><summary class="text-action">Xem frpc</summary><div class="frpc-box"><button class="copy-btn copy-cfg" type="button" data-copy-target="next">Copy cấu hình</button><pre class="frpc-cfg">[common]
 server_addr = {{$addr}}
 server_port = {{$port}}
 user = {{.Username}}
@@ -26,13 +26,13 @@ meta_token = {{.Token}}
 type = http
 local_ip = 127.0.0.1
 local_port = 8080
-subdomain = {{.Username}}</pre></details>{{else}}<span class="muted">Chỉ đọc</span>{{end}}
+subdomain = {{.Username}}</pre></div></details>{{else}}<span class="muted">Chỉ đọc</span>{{end}}
           </td>
           <td class="row-actions">
             {{if .CanManage}}<button class="btn small ghost" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/rotate" hx-target="#frp-users" hx-swap="innerHTML">Đổi token</button><button class="btn small danger" hx-post="/servers/{{$sid}}/frp-users/{{.ID}}/delete" hx-target="#frp-users" hx-swap="innerHTML" hx-confirm="Xóa user {{.Username}}?">Xóa</button>{{else}}<span class="lock-label">Được bảo vệ</span>{{end}}
           </td>
         </tr>
-        {{else}}<tr><td colspan="5"><div class="empty-inline">Chưa có FP user trên site này.</div></td></tr>{{end}}
+        {{else}}<tr class="empty-row"><td colspan="5"><div class="empty-inline">Chưa có FP user trên site này.</div></td></tr>{{end}}
       </tbody>
     </table>
   </div>
@@ -41,7 +41,7 @@ subdomain = {{.Username}}</pre></details>{{else}}<span class="muted">Chỉ đọ
     <input type="hidden" name="_csrf" value="{{.CSRF}}">
     <label><span>Username mới</span><input name="username" placeholder="site-camera-01" required></label>
     <label><span>Token</span><input name="token" placeholder="Để trống để tự sinh an toàn"></label>
-    <button class="btn primary" type="submit">＋ Tạo FP user</button>
+    <button class="btn primary" type="submit"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Tạo FP user</span></button>
   </form>
 </div>
 {{end}}

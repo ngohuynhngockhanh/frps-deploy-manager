@@ -3,59 +3,60 @@
 {{$csrf := .CSRF}}
 {{$admin := .IsAdmin}}
 <div class="cert-panel">
-  {{if .Err}}<p class="error">{{.Err}}</p>{{end}}
-  {{if .Msg}}<p class="muted">✓ {{.Msg}}</p>{{end}}
+  {{if .Err}}<div class="notice error">{{.Err}}</div>{{end}}
+  {{if .Msg}}<div class="notice success">✓ {{.Msg}}</div>{{end}}
 
   {{if not .Domains}}
-    <p class="muted">Set a domain on this server to enable certificates.</p>
+    <p class="muted">Chưa cấu hình domain trên server này để cấp chứng chỉ.</p>
   {{else}}
     {{range .Domains}}
     <div class="cert-domain">
       <div class="kv"><span>Domain</span>
-        <code>{{.Domain}}</code>
-        {{if .Primary}}<span class="badge">chính</span>{{else}}<span class="badge">phụ</span>{{end}}
+        <span class="kv-val"><code>{{.Domain}}</code> {{if .Primary}}<span class="badge">chính</span>{{else}}<span class="badge">phụ</span>{{end}}</span>
       </div>
       {{if .HasCert}}
         {{$days := .Cert.DaysRemaining}}
-        <div class="kv"><span>Issuer</span><code>{{.Cert.Issuer}}</code></div>
+        <div class="kv"><span>Issuer</span><span class="kv-val"><code>{{.Cert.Issuer}}</code></span></div>
         <div class="kv"><span>Expires in</span>
-          <span class="cert-badge {{if lt $days 8}}red{{else if lt $days 31}}amber{{else}}green{{end}}">{{$days}} days</span>
+          <span class="kv-val"><span class="cert-badge {{if lt $days 8}}red{{else if lt $days 31}}amber{{else}}green{{end}}">{{$days}} days</span></span>
         </div>
       {{else}}
-        <p class="muted">No certificate yet for <code>{{.Domain}}</code>.</p>
+        <p class="muted">Chưa có chứng chỉ cho <code>{{.Domain}}</code>.</p>
       {{end}}
 
       {{if $admin}}
+      {{if or (and .Primary (not .HasCF)) .HasCert}}
       <div class="op-row">
         {{if and .Primary (not .HasCF)}}
         <form hx-post="/servers/{{$sid}}/certs/issue" hx-target="#cert-panel" hx-swap="innerHTML"
-              hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
+              hx-indicator="#cert-spin" hx-disabled-elt="find button" class="op-form">
           <input type="hidden" name="_csrf" value="{{$csrf}}">
           <input type="hidden" name="domain" value="{{.Domain}}">
           <button class="btn primary" type="submit">{{if .HasCert}}Renew{{else}}Issue{{end}} certificate (HTTP-01)</button>
         </form>
         {{end}}
         {{if .HasCert}}
-        <form hx-post="/servers/{{$sid}}/certs/refresh" hx-target="#cert-panel" hx-swap="innerHTML" class="inline">
+        <form hx-post="/servers/{{$sid}}/certs/refresh" hx-target="#cert-panel" hx-swap="innerHTML" class="op-form">
           <input type="hidden" name="_csrf" value="{{$csrf}}">
           <input type="hidden" name="domain" value="{{.Domain}}">
           <button class="btn ghost" type="submit">Refresh expiry</button>
         </form>
         {{end}}
       </div>
+      {{end}}
 
       {{if .HasCF}}
       <div class="cf-box">
-        <div class="muted">Cloudflare (DNS-01 wildcard — <code>*.{{.Domain}}</code>, auto-renew):</div>
+        <div class="cf-caption">Cloudflare (DNS-01 wildcard — <code>*.{{.Domain}}</code>, auto-renew):</div>
         <div class="op-row">
           <form hx-post="/servers/{{$sid}}/dns/cloudflare" hx-target="#cert-panel" hx-swap="innerHTML"
-                hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
+                hx-indicator="#cert-spin" hx-disabled-elt="find button" class="op-form">
             <input type="hidden" name="_csrf" value="{{$csrf}}">
             <input type="hidden" name="domain" value="{{.Domain}}">
             <button class="btn" type="submit">Point DNS → VPS</button>
           </form>
           <form hx-post="/servers/{{$sid}}/certs/cloudflare" hx-target="#cert-panel" hx-swap="innerHTML"
-                hx-indicator="#cert-spin" hx-disabled-elt="find button" class="inline">
+                hx-indicator="#cert-spin" hx-disabled-elt="find button" class="op-form">
             <input type="hidden" name="_csrf" value="{{$csrf}}">
             <input type="hidden" name="domain" value="{{.Domain}}">
             <button class="btn primary" type="submit">Issue wildcard cert</button>
